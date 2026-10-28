@@ -1,6 +1,6 @@
 // EDTO Mind Map service worker: cache-first app shell so the app opens offline.
 // Bump CACHE when files change so installed copies refresh.
-const CACHE = 'edto-v1';
+const CACHE = 'edto-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
