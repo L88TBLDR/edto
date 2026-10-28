@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f5f8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EDTO">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>EDTO Mind Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one hub card, then nine branch panels as collapsible trees; every leaf carries a reference line. */
+:root{
+  --bg:#f6f7f4; --fg:#1d2320; --muted:#5d665f; --line:#d5dad4; --panel:#ffffff;
+  --accent:#0f5f8a; --accent-ink:#ffffff; --num:#9a4a00; --num-bg:#fff2e3;
+  --warn:#8a2a1a; --warn-bg:#fbe9e5; --gap:#3f4f9a; --gap-bg:#e9ecf8; --ok:#1f6b3a; --ok-bg:#e4f2e8;
+  --display:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121614; --fg:#e6e9e4; --muted:#9aa49c; --line:#2d3531; --panel:#1b211e;
+  --accent:#6fb6dc; --accent-ink:#0b1a24; --num:#f0b070; --num-bg:#33240f; --warn:#f29a86; --warn-bg:#3a1a14; --gap:#a9b6ef; --gap-bg:#1d2238; --ok:#8fd4a4; --ok-bg:#15301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --fg:#e6e9e4; --muted:#9aa49c; --line:#2d3531; --panel:#1b211e;
+  --accent:#6fb6dc; --accent-ink:#0b1a24; --num:#f0b070; --num-bg:#33240f; --warn:#f29a86; --warn-bg:#3a1a14; --gap:#a9b6ef; --gap-bg:#1d2238; --ok:#8fd4a4; --ok-bg:#15301f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size:15px;line-height:1.45;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 48px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-size:1.55rem;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:1.05rem;margin:0}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.hub{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.hub .thesis{font-size:1.02rem;font-weight:500;margin:6px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:.74rem;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--fg);text-decoration:none;background:var(--bg)}
+.chip:hover,.chip:focus{border-color:var(--accent);outline:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tools input{flex:1 1 180px;min-width:0;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg)}
+.tools button{font:inherit;font-size:.85rem;padding:7px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.tools button:focus{outline:2px solid var(--accent);outline-offset:1px}
+.branch{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden}
+.branch>summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;align-items:baseline;gap:10px;border-left:5px solid var(--accent)}
+.branch>summary::-webkit-details-marker{display:none}
+.branch>summary .k{font-family:var(--mono);font-size:.78rem;color:var(--accent);min-width:2ch}
+.branch>summary .n{font-size:.78rem;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+.branch[data-kind="warn"]>summary{border-left-color:var(--warn)}
+.branch[data-kind="warn"]>summary .k{color:var(--warn)}
+.branch[data-kind="gap"]>summary{border-left-color:var(--gap)}
+.branch[data-kind="gap"]>summary .k{color:var(--gap)}
+.branch[data-kind="ok"]>summary{border-left-color:var(--ok)}
+.branch[data-kind="ok"]>summary .k{color:var(--ok)}
+.body{padding:4px 16px 14px 16px}
+.tree{list-style:none;margin:0;padding:0}
+.tree ul{list-style:none;margin:0;padding-left:14px;border-left:1px solid var(--line)}
+.tree li{margin:0;padding:5px 0 5px 10px;position:relative}
+.tree li::before{content:"";position:absolute;left:0;top:16px;width:8px;height:1px;background:var(--line)}
+.tree details>summary{cursor:pointer;list-style:none;font-weight:600}
+.tree details>summary::-webkit-details-marker{display:none}
+.tree details>summary::before{content:"+";display:inline-block;width:1.1em;color:var(--accent);font-family:var(--mono)}
+.tree details[open]>summary::before{content:"–"}
+.tree .leaf{display:block}
+.tree .ref{display:block;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+.num{font-family:var(--mono);background:var(--num-bg);color:var(--num);padding:0 4px;border-radius:4px;font-size:.92em;font-variant-numeric:tabular-nums}
+.tag{font-family:var(--mono);font-size:.68rem;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:4px}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}
+.tag.gap{background:var(--gap-bg);color:var(--gap)}
+.tag.gen{background:var(--gap-bg);color:var(--gap)}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}
+.tblwrap{overflow-x:auto;margin:6px 0}
+table{border-collapse:collapse;font-size:.85rem;min-width:420px;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td.r{text-align:right}
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0 4px}
+.flow div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:.8rem}
+.flow b{display:block;font-family:var(--mono);font-size:.7rem;color:var(--accent);margin-bottom:3px}
+@media (max-width:560px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.q{font-weight:600}
+.a{color:var(--fg)}
+mark{background:var(--num-bg);color:inherit;padding:0 1px}
+.hiddenli{display:none}
+a.jump{color:var(--accent);text-decoration:underline dotted;text-underline-offset:2px;font-weight:500}
+a.jump::after{content:" \2197";font-size:.8em}
+.flash{animation:flash 1.6s ease-out}
+@keyframes flash{0%{background:var(--num-bg)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}}
+#back{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;font:inherit;font-size:.9rem;font-weight:600;padding:10px 14px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);box-shadow:0 2px 10px rgba(0,0,0,.18);cursor:pointer}
+#back:focus{outline:2px solid var(--fg);outline-offset:2px}
+.tl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tl ol{list-style:none;margin:10px 0 0;padding:0 0 0 22px;border-left:2px solid var(--accent)}
+.tl li{position:relative;padding:4px 0 10px 12px}
+.tl li::before{content:"";position:absolute;left:-28px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+.tl li.ph{padding-top:12px;font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.tl li.ph::before{width:14px;height:14px;left:-30px;top:14px;background:var(--panel);border:3px solid var(--accent)}
+.tl .step{display:block}
+.tl .ref{display:block;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+
+/* PWA tab shell */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tabs button{flex:1 1 0;min-width:0;font:inherit;font-size:.86rem;font-weight:600;padding:9px 6px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button:focus{outline:2px solid var(--accent);outline-offset:1px}
+.view{display:flex;flex-direction:column;gap:18px}
+.view[hidden]{display:none}
+.ck{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.ck .ph{display:flex;align-items:baseline;gap:8px;margin:14px 0 6px;font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.ck .ph .cnt{margin-left:auto;color:var(--muted);font-weight:400}
+.ck .ph button{font:inherit;font-size:.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0}
+.ck label{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;padding:7px 0;border-top:1px solid var(--line)}
+.ck input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent)}
+.ck label.done .step{color:var(--muted);text-decoration:line-through}
+.ck .step{display:block}
+.ck .ref{display:block;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:2px}
+.ckbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+.ckbar .prog{flex:1 1 140px;height:8px;border-radius:4px;background:var(--line);overflow:hidden;min-width:0}
+.ckbar .prog i{display:block;height:100%;background:var(--ok);width:0}
+.ckbar button{font:inherit;font-size:.85rem;padding:7px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.offline{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+
+footer{color:var(--muted);font-size:.78rem;max-width:70ch}
+@media (prefers-reduced-motion:no-preference){.branch>summary{transition:background .15s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Scoot A320 · command prep · OM-A 12.23 (I3R7, 01 JUN 2026) · FCOM 26 MAY 26</div>
+    <h1>EDTO Mind Map</h1>
+    <p class="sub">Hub first, then 21 branches: branches 1–16 mirror OM-A 12.23 paragraph by paragraph (12.23.1 → 12.23.19), 17 is the Airbus FCOM side, 18 the adjacent OM-A/FCOM1A rules, then conflicts, gaps and examiner probes. Open a branch, open its nodes. Every leaf has a reference line. Numbers are <span class="num">highlighted</span>. Frames: TRx = A320ceo, TNx = A320neo, NCx = A321neo.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" data-view="map" aria-selected="true">Map</button>
+    <button type="button" role="tab" data-view="timeline" aria-selected="false">Timeline</button>
+    <button type="button" role="tab" data-view="checklist" aria-selected="false">Checklist</button>
+  </div>
+
+  <div class="view" id="view-checklist" hidden>
+    <section class="ck">
+      <div class="eyebrow">Checklist</div>
+      <h2>Phase-by-phase, tick as you go</h2>
+      <p class="sub">Ticks are saved on this device. Reset all before the next EDTO sector.</p>
+      <div class="ckbar"><div class="prog"><i id="ckprog"></i></div><span id="cktotal" class="offline"></span><button type="button" id="ckreset">Reset all</button></div>
+      <div id="cklist"></div>
+    </section>
+  </div>
+
+  <div class="view" id="view-timeline" hidden>
+  <details class="tl" id="timeline" open>
+    <summary style="list-style:none;cursor:pointer"><div class="eyebrow">Timeline</div><h2>What to do, at which phase of flight</h2><p class="sub">One line per step, in the order you meet it on the line. Every step cites its paragraph; tap a link to open the full node in the branches below.</p></summary>
+    <ol id="tlist"></ol>
+  </details>
+  </div>
+
+  <div class="view" id="view-map">
+  <section class="hub" id="hub">
+    <div class="eyebrow">Hub</div>
+    <p class="thesis">EDTO = a two-engine operation where the one-engine-inoperative diversion time to an enroute alternate exceeds the CAAS threshold of <span class="num">60 min</span>. The A320 is approved to a maximum diversion time of <span class="num">120 min</span>. Everything else on this page answers one of four questions: <strong>where is the segment</strong>, <strong>which aerodrome</strong>, <strong>how much fuel</strong>, <strong>what changes the decision</strong>.</p>
+    <div class="flow">
+      <div><b>DISPATCH (10)</b>MEL (ETOPS items) · ERA wx at EDTO minima · OFP vs chart · ATC FPL · X-FEED check · top-up fuel</div>
+      <div><b>BEFORE ENTRY POINT (12)</b>Re-check ERA TAF vs <em>landing</em> minima · aircraft status · fuel · re-route if needed</div>
+      <div><b>IN SEGMENT (12)</b>No re-route required for wx degrading · monitor ERAs · CP is not a re-clearance point</div>
+      <div><b>DIVERSION (13–15, 17)</b>Commander not bound by pre-flight rules · strategy choice · systems triggers (PRO-SPO-40-40)</div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Filter leaves (e.g. 1500, PROB 40, APU, IDG)" aria-label="Filter">
+    <button id="openAll" type="button">Expand all</button>
+    <button id="closeAll" type="button">Collapse all</button>
+  </div>
+
+  <div id="branches"></div>
+  </div>
+
+  <button id="back" type="button" hidden aria-label="Back to where you jumped from">↩ Back</button>
+
+
+
+
+
+  <footer><span class="offline" id="swstate"></span><br>Built from the project corpus only: OM-A Ch 12 Issue 3 Rev 7 (page/rev stamps per paragraph), FCOM PRO-SPO-40-30/40/50/60 (26 MAY 26) and FCOM1A Ch 2 (I4R1). Where OM-A refers to a table the FCOM extract does not contain, the conflict is listed in branch 19, not papered over. Nothing here is from generic A320 knowledge unless tagged <span class="tag gen">general</span>.</footer>
+</div>
+
+<script>
+// Data: each branch = {k, title, kind, nodes:[node]}; node = {t:text, r:ref, c:[children], id}; leaf when no c.
+const N = (t, r, c, id) => ({t, r, c, id});
+// J('id','label') = in-page jump link that opens the target node and scrolls to it
+const J = (id, label) => `<a class="jump" href="#${id}">${label}</a>`;
+const B = [
+
+{k:"1", title:"12.23.1 General", nodes:[
+  N("§1 Extended Diversion Time Operations refers to any operation by an aircraft with 2 or more turbine engines where the diversion time to an enroute alternate aerodrome exceeds the threshold time established by CAAS.", "OM-A 12.23.1 §1 · p.12-109 I3R4 01 OCT 2023"),
+  N("§1 NOTE: EDTO may also be referred to as Extended Operations (ETOPS) in some documents. The FCOM uses ETOPS throughout.", "OM-A 12.23.1 §1 NOTE"),
+  N("§2 Diversion Time: the time, calculated in still air under ISA conditions, based on the one-engine-inoperative cruise speed, to fly to an enroute alternate aerodrome.", "OM-A 12.23.1 §2"),
+  N("§3 Threshold Time: the range, expressed in time, established by CAAS to an enroute alternate aerodrome. EDTO approval is required for operations beyond this time.", "OM-A 12.23.1 §3"),
+  N("§4 Maximum Diversion Time: the maximum allowable range, expressed in time, from a point on a route to an enroute alternate aerodrome at the approved speed for that fleet type.", "OM-A 12.23.1 §4"),
+  N("§5 EDTO policy contains specific requirements about dispatch and operational control to govern ALL flights where the diversion time exceeds <span class='num'>60 min</span>, and additional requirements for re-evaluating alternate aerodromes where the diversion time exceeds the CAAS threshold time. (Two tiers: " + J('b4','branch 4') + " and " + J('b5','branch 5') + ".)", "OM-A 12.23.1 §5"),
+  N("§6 CAAS has established an EDTO Threshold Time of <span class='num'>60 min</span> for the A320 (and B787) the Company operates.", "OM-A 12.23.1 §6")
+]},
+
+{k:"2", title:"12.23.2 EDTO Approval", nodes:[
+  N("§1 The A320 has EDTO approval to operate to a maximum diversion time of <span class='num'>120 min</span> at the approved one-engine diversion cruise speed. (§2, B787 180 min, omitted.)", "OM-A 12.23.2 §1 · p.12-109 I3R4"),
+  N("§3 Approved one-engine diversion speed schedule, A320: <span class='num'>MMO/VMO</span>. <span class='tag warn'>" + J('c82','conflict 8.2: FCOM tables say MCT/VMO') + "</span>", "OM-A 12.23.2 §3 · p.12-109"),
+  N("§4 Approved maximum diversion distance, used to determine the area of operations", "OM-A 12.23.2 §4 · p.12-110 I3R5 01 APR 2024", [
+    N("<div class='tblwrap'><table><tr><th>Diversion time</th><th>A320ceo TRx</th><th>A320neo TNx</th><th>A321neo NCx</th></tr><tr><td>60 min</td><td class='r'><span class='num'>427 nm</span></td><td class='r'><span class='num'>409 nm</span></td><td class='r'><span class='num'>410 nm</span></td></tr><tr><td>120 min</td><td class='r'><span class='num'>833 nm</span></td><td class='r'><span class='num'>799 nm</span></td><td class='r'><span class='num'>798 nm</span></td></tr><tr><td>180 min</td><td>–</td><td>–</td><td>–</td></tr></table></div>", "OM-A 12.23.2 §4 table"),
+    N("Where these come from: each pair equals one weight row of the FCOM MCT/VMO maximum-diversion-distance table. TRx at 75 000 kg (diversion FL 150): 427 / 833. TNx at 75 000 kg (FL 140): 409 / 799. NCx at 90 000 kg (FL 100): 410 / 798. Full tables: " + J('fcom4060','branch 17 · FCOM PRO-SPO-40-60') + ".", "FCOM PRO-SPO-40-60 P1/4, P4/4, P2/4 · 17 NOV 20"),
+    N("Examiner angle: the distance is a still-air, ISA, optimum-level planning circle, not a performance guarantee. Headwind, a lower drift-down level, terrain and a higher actual weight all shorten what you can reach.", "Reasoning from FCOM PRO-SPO-40-60 stated assumptions")])
+]},
+
+{k:"3", title:"12.23.3 Flight Planning and Inflight Re-routing Criteria", nodes:[
+  N("§1 Flights will be planned so as not to exceed the approved maximum diversion time (<span class='num'>120 min</span>) of the aircraft type from an enroute alternate aerodrome.", "OM-A 12.23.3 §1 · p.12-110 I3R5"),
+  N("§2 EDTO Planning Charts with 120/180-minute circles from enroute aerodromes are carried on board. (120 min is the A320 ring.)", "OM-A 12.23.3 §2"),
+  N("§3 EDTO rings with 120/180-minute circles from enroute aerodromes are also available in Jepp FD-Pro Enroute Map view.", "OM-A 12.23.3 §3"),
+  N("§4 In the event of an inflight re-routing, crew are to ensure that the flight remains within the approved maximum diversion time from an enroute alternate aerodrome of the aircraft type.", "OM-A 12.23.3 §4")
+]},
+
+{k:"4", title:"12.23.4 Requirements for operations beyond 60 minutes (ALL such flights)", nodes:[
+  N("Scope: the following apply to ALL flights where the diversion time to an enroute alternate aerodrome exceeds <span class='num'>60 min</span>.", "OM-A 12.23.4 lead-in · p.12-110 I3R5"),
+  N("§1 Operational Control &amp; Flight Dispatch: established through IOCC. Two-way communications between any flight and these control centres are available via VHF, SATCOM and ACARS.", "OM-A 12.23.4 §1"),
+  N("§2 Operational Procedures: dispatch preparation, flight planning etc. are published in 12.23.10. Summary: MEL ETOPS items → no dispatch; ERA TAFs at EDTO minima; NOTAMs; OFP vs EDTO chart; ATC FPL marked EDTO with the same ERAs; FPS does the critical fuel study; ZFW/top-up rule; threshold-time check; IOCC comms and continuous monitoring. Full text: " + J('b10','branch 10 · 12.23.10') + ".", "OM-A 12.23.4 §2 → 12.23.10"),
+  N("§3 Training", "OM-A 12.23.4 §3 · p.12-111 I3R6 01 JUN 2025", [
+    N("a. It is a requirement for Flight Crew and dispatchers to be trained on EDTO requirements.", "OM-A 12.23.4 §3 a"),
+    N("b. Crew qualification: all flight crew must be EDTO trained as per the Conversion syllabus AND are required to operate as a crew member on an EDTO Familiarisation Flight with an Instructor prior to operating an EDTO flight.", "OM-A 12.23.4 §3 b i")]),
+  N("§4 Alternates to be identified", "OM-A 12.23.4 §4 · p.12-111", [
+    N("a. The OFP identifies the EDTO enroute alternate aerodromes and provides the most up-to-date information on their operational status and meteorological conditions (see 12.23.6, " + J('b6','branch 6') + ").", "OM-A 12.23.4 §4 a"),
+    N("b. In flight, provisions are available for crew to obtain the most up-to-date weather information through various communication channels (e.g. ACARS, HF etc.).", "OM-A 12.23.4 §4 b"),
+    N("NOTE: Notwithstanding the EDTO ERAs identified in the OFP, the Commander may divert to any aerodrome he deems more appropriate, taking into account its proximity, meteorological conditions, facilities and runway conditions, depending on the nature of the event, including any emergency situation.", "OM-A 12.23.4 §4 NOTE")])
+]},
+
+{k:"5", title:"12.23.5 Requirements for operations beyond Threshold Time (in addition to 12.23.4)", nodes:[
+  N("§1 EDTO Approval: the Company has EDTO approval from CAAS for operations beyond the 60-minute threshold time.", "OM-A 12.23.5 §1 · p.12-111 I3R6"),
+  N("§2 EDTO Critical Fuel: an aircraft with two engines engaged in EDTO operations should carry enough fuel to fly to an enroute alternate aerodrome as described in 12.23.8 (" + J('critfuel','branch 8') + ").", "OM-A 12.23.5 §2"),
+  N("§3 Verify Alternates Above Minima: during flight preparation AND throughout the flight, the most up-to-date information should be provided to the flight crew on the suitable EDTO ERAs, including operational status and meteorological conditions that meet the criteria in 12.23.6 §2. If any conditions, such as weather below planning minima, are identified that would preclude a safe approach and landing at that aerodrome during the estimated time of use, an alternative course of action should be determined, such as selecting another ERA that is within the approved maximum diversion time.", "OM-A 12.23.5 §3"),
+  N("§4 Alternates To Be Specified: the EDTO ERAs that meet the 12.23.6 criteria are to be specified and filed in the ATC Flight Plan.", "OM-A 12.23.5 §4 · p.12-112 I3R4"),
+  N("§5 Maintenance Programme – to maintain the required level of safety on routes beyond the threshold time it is necessary that:", "OM-A 12.23.5 §5 a · p.12-112", [
+    N("i. the airworthiness certification of the aeroplane type specifically permits operations beyond the threshold time, taking into account the aeroplane system design and reliability aspects;", "OM-A 12.23.5 §5 a i"),
+    N("ii. the reliability of the propulsion system is such that the risk of double engine failure from independent causes is extremely remote, assessed as provided in the Airworthiness Manual (Doc 9760) and found acceptable to support the diversion time being approved;", "OM-A 12.23.5 §5 a ii"),
+    N("iii. any necessary special maintenance requirements are fulfilled;", "OM-A 12.23.5 §5 a iii"),
+    N("iv. specific flight dispatch requirements are met;", "OM-A 12.23.5 §5 a iv"),
+    N("v. necessary in-flight operational procedures are established; and", "OM-A 12.23.5 §5 a v"),
+    N("vi. specific operational approval is granted by CAAS.", "OM-A 12.23.5 §5 a vi")]),
+  N("§6 The requirements of 12.23.4 and 12.23.5 are illustrated in a figure on the PDF (p.12-112). Figures do not survive text extraction; view it on the PDF.", "OM-A 12.23.5 §6 + NOTE · p.12-112")
+]},
+
+{k:"6", title:"12.23.6 EDTO Enroute Alternate Aerodromes", nodes:[
+  N("§1 An Enroute Alternate aerodrome is one that is available and:", "OM-A 12.23.6 §1 · p.12-113 I3R5", [
+    N("a. has a runway of sufficient length;", "OM-A 12.23.6 §1 a"),
+    N("b. is equipped with the necessary ancillary services, such as ATC, sufficient lighting, communications, weather reporting and emergency services;", "OM-A 12.23.6 §1 b"),
+    N("NOTE: RFFS equivalent to ICAO Category <span class='num'>4</span> is required when an Enroute Alternate is nominated as an EDTO ERA. For RFFS not located on the aerodrome, it must be capable of meeting the aircraft with <span class='num'>30 min</span> notice. (Company RFFS table and the Commander's 30-min-notice duty: " + J('rffs','branch 18') + ".)", "OM-A 12.23.6 §1 NOTE"),
+    N("c. is equipped with at least one approved instrument approach procedure.", "OM-A 12.23.6 §1 c")]),
+  N("§2 An EDTO Enroute Alternate is an Enroute Alternate where the meteorological conditions must meet the following planning minima during the estimated time of use:", "OM-A 12.23.6 §2 · p.12-113", [
+    N("<div class='tblwrap'><table><tr><th>Approach facility</th><th>Ceiling</th><th>Visibility</th></tr><tr><td>Precision approach</td><td>Authorised DH/DA + <span class='num'>200 ft</span></td><td>Authorised visibility + <span class='num'>800 m</span></td></tr><tr><td>Non-precision or circling</td><td>Authorised MDH/MDA + <span class='num'>400 ft</span></td><td>Authorised visibility + <span class='num'>1500 m</span></td></tr></table></div>", "OM-A 12.23.6 §2 table"),
+    N("a. The precision-approach criteria are only to be applied to Category 1 approaches.", "OM-A 12.23.6 §2 a"),
+    N("b. When determining the usability of an instrument approach, forecast wind plus any gusts should be within operating limits, and within the maximum crosswind limitations taking into account the runway condition (dry, wet or contaminated) plus any reduced-visibility limits.", "OM-A 12.23.6 §2 b"),
+    N("c. If the forecast includes a TEMPO period or a <span class='num'>PROB 40</span> of fog, mist, haze, dust/sandstorm or continuous precipitation that may reduce visibility below the minima above, that aerodrome cannot be nominated as an EDTO ERA.", "OM-A 12.23.6 §2 c"),
+    N("d. Weather requirements of Departure, Destination and Alternate aerodromes are as per Standard Policy unless they are nominated as EDTO ERAs, in which case their forecast must meet the EDTO ERA requirements.", "OM-A 12.23.6 §2 d")], 'minima')
+]},
+
+{k:"7", title:"12.23.7 Other EDTO Definitions", nodes:[
+  N("§1 The EDTO Segment starts (ENTRY POINT) when the route is more than <span class='num'>60 min</span> flying time in still air at the approved one-engine diversion speed from an enroute alternate aerodrome, and ends (EXIT POINT) when the route is back within 60 min from an enroute alternate aerodrome. An EDTO route can contain more than one EDTO segment.", "OM-A 12.23.7 §1 · p.12-113 I3R5"),
+  N("§2 The EDTO Area of Operation is the area beyond the Threshold Time from an Enroute Alternate Aerodrome, computed using a one-engine-inoperative cruise speed under standard conditions in still air. It is represented by circles centred on those aerodromes, the radius of which is the defined maximum diversion distance (branch 2 table).", "OM-A 12.23.7 §2 · p.12-114 I3R4"),
+  N("§3 ETP (Equal Time Point): a point on the intended route where the one-engine-inoperative diversion times to two enroute alternate aerodromes are equal. (Formula and the broader fuel-policy ETP definition: " + J('etp','branch 18') + ".)", "OM-A 12.23.7 §3"),
+  N("§4 CP (Critical Point)", "OM-A 12.23.7 §4 · p.12-114", [
+    N("a. One of the ETPs of the route which is critical with regard to the EDTO fuel requirements if a diversion has to be initiated from that point.", "OM-A 12.23.7 §4 a"),
+    N("b. The CP is usually, but not always (depending on the configuration of the area of operation and the weather), the last ETP within the EDTO segment. Therefore the CP has to be carefully determined by computation.", "OM-A 12.23.7 §4 b"),
+    N("c. The EDTO critical fuel scenario must be applied to each ETP.", "OM-A 12.23.7 §4 c")])
+]},
+
+{k:"8", title:"12.23.8 EDTO Critical Fuel Scenario", nodes:[
+  N("§1 The fuel quantity necessary to fly to an enroute alternate aerodrome considering, at the most critical point on the route, the most limiting system failure.", "OM-A 12.23.8 §1 · p.12-114 I3R4"),
+  N("§2 An aeroplane with two engines engaged in EDTO should carry enough fuel to fly to an ERA as described in 12.23.6. This EDTO critical fuel corresponds to the additional fuel that may be required to comply with 12.23.9 §3 c (" + J('addfuel','branch 9') + ").", "OM-A 12.23.8 §2"),
+  N("§3 For the computation of the EDTO critical fuel reserves and the complete EDTO critical fuel planning according to EASA AMC 20-6 Rev 2, the diversion fuel includes:", "OM-A 12.23.8 §3 · p.12-114", [
+    N("a. fuel sufficient to fly to an ERA considering, at the most critical point of the route, failure of one engine (<span class='num'>1E</span>), or simultaneous engine failure and depressurisation (<span class='num'>1D</span>), or depressurisation alone (<span class='num'>2D</span>), whichever is more limiting;", "OM-A 12.23.8 §3 a"),
+    N("b. fuel for <span class='num'>15 min</span> of holding at <span class='num'>1500 ft</span>;", "OM-A 12.23.8 §3 b"),
+    N("c. fuel for instrument approach and landing;", "OM-A 12.23.8 §3 c"),
+    N("d. fuel to account for errors in wind forecasting (<span class='num'>5 %</span> wind speed factor on actual forecast wind speeds);", "OM-A 12.23.8 §3 d"),
+    N("e. fuel to account for deterioration in cruise fuel-burn performance;", "OM-A 12.23.8 §3 e"),
+    N("f. fuel to account for any Configuration Deviation List (CDL) or MEL item;", "OM-A 12.23.8 §3 f"),
+    N("g. <span class='num'>2 %</span> of diversion trip fuel for engine anti-ice use;", "OM-A 12.23.8 §3 g"),
+    N("h. fuel to account for APU use. (Airbus figures for icing and APU: " + J('fcom4030','branch 17 · PRO-SPO-40-30') + ".)", "OM-A 12.23.8 §3 h")], 'critfuel'),
+  N("§4 Critical Fuel Scenario Study", "OM-A 12.23.8 §4 · p.12-115 I3R6 01 JUN 2025", [
+    N("a. Obtain planned weight and fuel required from a standard flight plan for the route.", "OM-A 12.23.8 §4 a"),
+    N("b. Calculate the EDTO ETPs for the route, by plotting or by calculation. Obtain the Critical Point (CP), which is normally the last EDTO ETP for the route.", "OM-A 12.23.8 §4 b"),
+    N("c. Determine the Critical Fuel Required from the table: for A320, “FCOM-PRO-SPO-40-60 ETOPS Fuel Requirement From Critical Point To Landing – One Engine Out – Cruise At 350 kt”. <span class='tag warn'>" + J('c81','conflict 8.1: this table is not in the FCOM extract') + "</span>", "OM-A 12.23.8 §4 c"),
+    N("d. If the OFP fuel remaining at the CP is less than the Critical Fuel Required, the difference must be carried on top of the normal fuel requirements as an EDTO top-up.", "OM-A 12.23.8 §4 d")])
+]},
+
+{k:"9", title:"12.23.9 EDTO Fuel Policy", nodes:[
+  N("§1 The pre-flight calculation of usable fuel required shall, as a minimum, be based on fuel-consumption data provided by the aircraft manufacturer.", "OM-A 12.23.9 §1 · p.12-115 I3R6"),
+  N("§2 The pre-flight calculation shall include at least: Taxi fuel + Trip fuel (including fuel for unforeseen contingencies) + mandated reserves.", "OM-A 12.23.9 §2 a"),
+  N("§2 NOTE: unforeseen factors are those which could influence fuel consumption to the destination, such as deviations of an individual aeroplane from expected fuel-consumption data, deviations from forecast meteorological conditions, extended taxi time before take-off, and deviations from planned routings and/or cruising levels.", "OM-A 12.23.9 §2 NOTE"),
+  N("§3 Mandated reserves consist of:", "OM-A 12.23.9 §3 · p.12-115", [
+    N("a. Contingency fuel (<span class='num'>5 %</span> of the planned trip fuel);", "OM-A 12.23.9 §3 a"),
+    N("b. Destination alternate fuel;", "OM-A 12.23.9 §3 b"),
+    N("c. Additional fuel if trip + contingency + alternate + final reserve fuel is insufficient to allow an aeroplane engaged in EDTO to comply with the EDTO critical fuel scenario of 12.23.8;", "OM-A 12.23.9 §3 c", undefined, 'addfuel'),
+    N("d. Discretionary fuel;", "OM-A 12.23.9 §3 d"),
+    N("e. Final reserve fuel.", "OM-A 12.23.9 §3 e")]),
+  N("§3 NOTE: Trip fuel calculations include MEL/CDL fuel, as well as fuel for known ATC, meteorology and other known delays.", "OM-A 12.23.9 §3 NOTE")
+]},
+
+{k:"10", title:"12.23.10 Pre-flight Requirements (Dispatch)", nodes:[
+  N("§1 Pre-flight system serviceability, including the status of items in the MEL", "OM-A 12.23.10 §1 a · p.12-116 I3R4", [
+    N("i. There are items in the MEL that affect EDTO. These items are identified as <span class='num'>ETOPS</span> for the A320 (and “ER” for the B787).", "OM-A 12.23.10 §1 a i"),
+    N("ii. No dispatch authorisation will be allowed (with such an item open). The MEL item text is not in this project store; read the ETOPS annotation on the EFB MEL. <span class='tag gap'>MEL local only</span>", "OM-A 12.23.10 §1 a ii")]),
+  N("§2 Identify Enroute Alternate Aerodromes – a to g", "OM-A 12.23.10 §2 · p.12-116 I3R4", [
+    N("a. Weather forecast for the nominated enroute alternates must be available prior to departure and must meet the EDTO ERA criteria of 12.23.6 §2 during the estimated time of use: CAT I precision DH/DA +<span class='num'>200 ft</span>, vis +<span class='num'>800 m</span>; NPA/circling MDH/MDA +<span class='num'>400 ft</span>, vis +<span class='num'>1500 m</span>; wind+gust within limits for the runway state; no TEMPO/PROB40 of fog, mist, haze, dust/sandstorm or continuous precipitation below those minima. Full node: " + J('minima','branch 6 · 12.23.6 §2') + ".", "OM-A 12.23.10 §2 a → 12.23.6 §2"),
+    N("b. Weather requirement of Departure, Destination and Alternate aerodromes will be as per Standard Policy unless they are nominated as EDTO ERAs, in which case their weather forecast must meet the requirements in 12.23.6 §2.", "OM-A 12.23.10 §2 b"),
+    N("c. NOTAMs must be checked to ensure that the runway, required facilities and navigational aids for the EDTO ERA remain available during the relevant period.", "OM-A 12.23.10 §2 c"),
+    N("d. The OFP should be checked with the EDTO Planning Chart to ensure that it is correctly prepared for EDTO, and that EDTO enroute aerodromes are correctly nominated and annotated in the OFP.", "OM-A 12.23.10 §2 d"),
+    N("e. Ensure that the ATC Flight Plan indicates the flight is EDTO and correctly reflects the nominated EDTO ERAs in the OFP.", "OM-A 12.23.10 §2 e"),
+    N("f. The Critical Fuel Scenario study need not be performed if the OFP is generated by the Company FPS, as it automatically performs this calculation and, if required, will show additional EDTO top-up fuel in the Minimum Fuel requirement of the OFP. (The study itself: " + J('critfuel','branch 8') + ".)", "OM-A 12.23.10 §2 f"),
+    N("g. Where EDTO Top-Up is planned, crew are advised NOT to adjust the Burn-off on the OFP should the latest ZFW be lower than originally planned. Should the latest ZFW be higher than planned, the normal Burn-off adjustments apply.", "OM-A 12.23.10 §2 g")]),
+  N("§3 Threshold Time: ensure that the intended route does not exceed the established aeroplane threshold time (<span class='num'>60 min</span>) unless the flight is dispatched under EDTO.", "OM-A 12.23.10 §3 a · p.12-116"),
+  N("§4 Two-way communication methods", "OM-A 12.23.10 §4 · p.12-117 I3R4", [
+    N("a. Two-way communications between any flight and IOCC are available via (i) VHF, (ii) ACARS and (iii) SATCOM (if installed).", "OM-A 12.23.10 §4 a"),
+    N("b. IOCC Controllers will monitor the flight-crew intercommunication system and radio communications and respond to a Flight Crew request within <span class='num'>5 min</span> of ACARS receipt.", "OM-A 12.23.10 §4 b")]),
+  N("§5 Continuous Monitoring: IOCC Controllers are required to monitor the availability of the EDTO ERAs nominated in the OFP. If weather and/or NOTAM render the OFP invalid due to changes in aerodrome status, the flight will be re-planned; this may include re-nomination of the EDTO ERA or uplinking a new OFP to the crew. Flight dispatch communicates with the aircraft via ACARS or voice when required.", "OM-A 12.23.10 §5 · p.12-117"),
+  N("Also done before an EDTO flight (not in 12.23.10 itself): FUEL X FEED functional check in cockpit preparation, and the Engineer carries out and records the refuelling on an EDTO sector. See " + J('xfeed','branch 18') + ".", "FCOM PRO-SPO-40-50; FCOM1A 2.4.2.1; OM-A 12.22.24 §1 a")
+]},
+
+{k:"11", title:"12.23.11 In-Flight (dispatch definition, APU in-flight start)", nodes:[
+  N("§1 Dispatch Definition: refer to the A320 MEL Preamble for the dispatch definition. If a failure occurs before the start of the take-off roll, any decision to continue the flight must be subject to Flight Crew judgement and good airmanship. Reference to the MEL is NOT required for any defect occurring in flight, whether the aircraft is within the EDTO segment or not.", "OM-A 12.23.11 §1 a · p.12-117 I3R4"),
+  N("§2 Auxiliary Power Unit (APU) in-flight starts", "OM-A 12.23.11 §2 · p.12-118 I3R7 01 JUN 2026", [
+    N("a. To maintain validity of the EDTO approval, the APU is required to be started in flight once every <span class='num'>3 months</span> for each aircraft, to ensure the APU maintains its in-flight start capability.", "OM-A 12.23.11 §2 a"),
+    N("b. When required, Engineering will schedule an APU In-flight Start to be carried out on a Singapore-bound sector only.", "OM-A 12.23.11 §2 b"),
+    N("NOTE: Flight crew should attempt the APU in-flight start within <span class='num'>5 days</span> of the expiry date.", "OM-A 12.23.11 §2 NOTE"),
+    N("c. Crew will be notified of the requirement by IOCC or Engineering.", "OM-A 12.23.11 §2 c"),
+    N("d. Conditions permitting, the APU should be started with a maximum of <span class='num'>3 attempts</span>, before top of descent.", "OM-A 12.23.11 §2 d"),
+    N("e. After the in-flight start, Flight Crew shall annotate the Technical Log and complete the APU In-Flight Start form (if applicable), left with the Tech Log.", "OM-A 12.23.11 §2 e"),
+    N("f. Record the number of start attempts, time, altitude and SAT in the Tech Log, i.e. “Successful APU in-flight start after _ attempts” or “Unsuccessful APU in-flight start after _ attempts”.", "OM-A 12.23.11 §2 f"),
+    N("NOTE: Any advisory messages generated during the APU in-flight start shall be annotated in the Technical Log.", "OM-A 12.23.11 §2 f NOTE"),
+    N("g. After a successful in-flight start, the APU should be shut down and restored after landing as per SOP. An unsuccessful in-flight start does NOT render the APU inoperative; it should still be started after landing as per SOP.", "OM-A 12.23.11 §2 g")])
+]},
+
+{k:"12", title:"12.23.12 In-Flight Monitoring", nodes:[
+  N("§1 During the flight, the Flight Crew should remain informed of any significant changes in conditions at designated EDTO ERAs.", "OM-A 12.23.12 §1 · p.12-118 I3R7"),
+  N("§2 Prior to the EDTO Entry Point, the forecast weather, established aeroplane status, fuel remaining and, where possible, field conditions and aerodrome services and facilities at designated EDTO ERAs are to be evaluated.", "OM-A 12.23.12 §2 · p.12-119 I3R4", [
+    N("a.i Before the Entry Point: updated weather forecasts of nominated EDTO ERAs should be obtained. If unable, the TAF received at dispatch would suffice.", "OM-A 12.23.12 §2 a i"),
+    N("a.ii Before the Entry Point, should the updated forecast (if available) for an EDTO ERA fall below <em>landing</em> minima, the Commander should re-nominate other EDTO ERA(s) or re-route to ensure the flight remains within the Maximum Diversion Time of an EDTO ERA.", "OM-A 12.23.12 §2 a ii"),
+    N("a.iii In-flight re-routing would require the Critical Fuel Scenario Study to be done for the remaining portion of the route. This can be done by crew or by contacting Dispatch (IOCC).", "OM-A 12.23.12 §2 a iii"),
+    N("b.i After the Entry Point: there is no requirement to modify the normal course of the flight if the weather degrades below landing minima.", "OM-A 12.23.12 §2 b i"),
+    N("b NOTE: When in flight, weather checks for the ERA are against landing minima instead of EDTO (planning) minima.", "OM-A 12.23.12 §2 b NOTE")]),
+  N("§3 EDTO Entry and Exit Point", "OM-A 12.23.12 §3 · p.12-119", [
+    N("a. The EDTO segment of the route should be determined from the EDTO Chart.", "OM-A 12.23.12 §3 a"),
+    N("b. The ETA of the single or multiple ENTRY and EXIT points should be calculated and annotated in the correct order amongst the waypoints in the OFP. These points may be displayed on the ND.", "OM-A 12.23.12 §3 b"),
+    N("c. They may be created as waypoints in the FMS using the BRG/DIST from the nearest route waypoint and displayed on the ND using the FIX INFO / Abeam function.", "OM-A 12.23.12 §3 c"),
+    N("NOTE: Flight Crew shall NOT create additional waypoints in the FMC/FMGS.", "OM-A 12.23.12 §3 NOTE")]),
+  N("§4 Prior to the EDTO Entry Point, if any conditions are identified which could preclude a safe approach and landing at a designated ERA, the Flight Crew should take appropriate action, such as re-routing as necessary, to remain within the operator's approved diversion time of an ERA with forecast weather at or above landing minima.", "OM-A 12.23.12 §4 · p.12-119"),
+  N("§5 If this is not possible, the next nearest ERA should be selected provided the diversion time does not exceed the maximum approved diversion time. This does not override the Commander's authority to select the safest course of action.", "OM-A 12.23.12 §5"),
+  N("§6 Other re-routing criteria prior to the EDTO Entry Point: in addition to weather, failure cases resulting in excessive fuel consumption exceeding the available fuel reserves. (Airbus list of four criteria: " + J('fcom4040','branch 17 · PRO-SPO-40-40') + ".)", "OM-A 12.23.12 §6 a–b · p.12-120 I3R4"),
+  N("§7 Fuel Monitoring", "OM-A 12.23.12 §7 · p.12-120", [
+    N("a. The procedures normally used per airline policy are also applicable for EDTO, even for flights where EDTO fuel planning is the limiting factor. There is NO requirement in the EDTO rules to reach the CP with the fuel on board (FOB) at least equal to the fuel required by the critical diversion fuel scenario in the OFP.", "OM-A 12.23.12 §7 a"),
+    N("b. This means the CP should NOT be considered a re-clearance point. Therefore, if during the flight the estimated FOB at the CP will be lower than the OFP critical fuel scenario, there is no requirement to make a diversion, provided the estimated fuel at destination is above the minimum required to divert to the destination alternate. Normal company fuel policy applies.", "OM-A 12.23.12 §7 b"),
+    N("c. Flight crew must make every effort to minimise fuel consumption for possible critical use. Minimum critical fuel (EDTO critical fuel reserve) required in flight (unlike the OFP plan fuel, which is only for dispatch planning) should be based on actual prevailing conditions (weather, approach etc.). The OFP critical diversion fuel includes an icing-condition reserve which may not be required if no icing is forecast.", "OM-A 12.23.12 §7 c"),
+    N("d. Nevertheless, if the CP is regularly over-flown with FOB lower than the critical-fuel-scenario fuel, appropriate corrective action should be taken in the way required fuel is determined at dispatch (e.g. increased Performance Factor, Route Reserves).", "OM-A 12.23.12 §7 d")])
+]},
+
+{k:"13", title:"12.23.13 Diversion Decision Making", nodes:[
+  N("§1 The considerations for an in-flight diversion decision are basically the same whether the flight is operated under EDTO or non-EDTO rules. For persistent smoke or fire, the earliest possible diversion and landing should be accomplished.", "OM-A 12.23.13 §1 · p.12-120 I3R4"),
+  N("§2 In flight, the Commander is not bound by the pre-flight EDTO rules for any specific course of action. He must evaluate the situation and take the most appropriate action dictated by the actual circumstances.", "OM-A 12.23.13 §2"),
+  N("§3 Speeds to use in a diversion", "OM-A 12.23.13 §3 · p.12-121 I3R4", [
+    N("a. Regardless of the one-engine-inoperative speed schedule assumed in determining the area of operation, the crew is free to adopt the strategy it considers most appropriate after assessing the overall situation.", "OM-A 12.23.13 §3 a"),
+    N("b. Application of the pre-planned speed strategy is not mandatory. For example, in a time-critical situation the crew should conduct the diversion at maximum speed.", "OM-A 12.23.13 §3 b")]),
+  N("§4 Diversions: considerations and recommendations for certain failures which may require a diversion are published, for the A320, in FCOM PRO-SPO-40-40 (" + J('fcom4040','branch 17') + ").", "OM-A 12.23.13 §4 a i")
+]},
+
+{k:"14", title:"12.23.14 Diversion Strategy Following Engine Failure", nodes:[
+  N("§1 Should an engine fail, or be shut down to prevent possible damage, notify ATC and initiate the drift-down procedure. Obtain area QNH and set it in the standby altimeter to check that aircraft altitude remains at or above OFP MORA during the drift-down.", "OM-A 12.23.14 §1 · p.12-121 I3R4"),
+  N("§2 The Commander may adopt any of three single-engine drift-down strategies, or any other strategy he considers most appropriate for the prevailing operational constraints:", "OM-A 12.23.14 §2", [
+    N("a. Obstacle Strategy (Minimum Drag Profile): use until clear of all obstacles; on clearing obstacles, revert to the standard strategy.", "OM-A 12.23.14 §2 a"),
+    N("b. Fixed Speed Strategy (CO Speed Profile): the minimum possible diversion time, at the expense of fuel.", "OM-A 12.23.14 §2 b"),
+    N("c. Standard Strategy (LRC Speed Profile): the best fuel burn-off but the maximum diversion time.", "OM-A 12.23.14 §2 c")]),
+  N("§3 Decide on an alternate from the enroute alternate lists of 12.23.17 and 12.23.18 (" + J('b16','branch 16') + ") or any other aerodrome considered suitable by the Commander under the prevailing situation.", "OM-A 12.23.14 §3"),
+  N("§4 Check that fuel remaining is at least equal to the fuel for the diversion plus the reserve required, using for the A320 the “A320 ETOPS Fuel from Critical Point to Landing Tables”. <span class='tag warn'>" + J('c81','conflict 8.1') + "</span>", "OM-A 12.23.14 §4 · p.12-122 I3R7"),
+  N("§5 The Flight Management System will also calculate the ETA and fuel remaining at the selected ERA based on whichever of the three profiles is selected.", "OM-A 12.23.14 §5"),
+  N("§5 NOTE: The FPS is programmed to use the most fuel-conservative strategy, i.e. the Fixed Speed Strategy. <span class='tag warn'>" + J('c84','conflict 8.4') + "</span>", "OM-A 12.23.14 §5 NOTE")
+]},
+
+{k:"15", title:"12.23.15 Landing at the Nearest Suitable Aerodrome", nodes:[
+  N("§1 “Land ASAP” indicates the non-normal situations where landing at the nearest suitable aerodrome, in point of time, is required.", "OM-A 12.23.15 §1 · p.12-122 I3R7"),
+  N("§2 In selecting the nearest EDTO ERA, the Commander should consider the suitability of nearby aerodromes in terms of facilities and weather, and their proximity to the aircraft position.", "OM-A 12.23.15 §2"),
+  N("§3 The Commander may determine, based on a number of possible factors, that the safest course is to divert to a more distant aerodrome than the nearest, e.g. to reach better weather or additional runway length to assist stopping when increased approach speeds may be required.", "OM-A 12.23.15 §3"),
+  N("§4 Persistent smoke or fire which cannot positively be confirmed completely extinguished requires the earliest possible descent, landing and passenger evacuation. This may dictate landing at the nearest aerodrome rather than the nearest suitable aerodrome.", "OM-A 12.23.15 §4")
+]},
+
+{k:"16", title:"12.23.16–19 Enroute and Emergency Aerodrome lists", nodes:[
+  N("§1 The aerodromes listed are correct at the date of printing. The list is not exhaustive; Flight Crew may consider other aerodromes not in the list as long as they satisfy the Enroute Alternate definition. Many aerodromes in Europe (west of 030E) are not listed because they are too numerous. Aerodromes likely to be selected as EDTO ERAs are shown in BLUE italic on the PDF.", "OM-A 12.23.16 §1 · p.12-122 I3R7"),
+  N("§2 Grouped in bands of longitude East and West of Singapore; within each band listed by latitude from North to South. Coordinates are on the PDF pages; only names and ICAO/IATA codes are reproduced here.", "OM-A 12.23.16 §2"),
+  N("12.23.17 EAST of Singapore, 105°E–120°E: Beijing ZBAA/PEK · Tianjin ZBTJ/TSN · Taiyuan ZBYN/TYN · Wuhan ZHHH/WUH · Fuzhou ZSFZ/FOL · Xiamen ZSAM/XMN · Guangzhou ZGGG/CAN · Shenzhen ZGSZ/SZX · Macau VMMC/MFM · Hong Kong VHHH/HKG · Hanoi VVNB/HAN · Haikou ZJHK/HAK · Fenghuang-Sanya ZJSY/SYX · Danang VVDN/DAD · Ho Chi Minh VVTS/SGN · Puerto Princesa RPVP/PPS · Kota Kinabalu WBKK/BKI · Sandakan WBKS/SDK · Bandar Seri Begawan WBSB/BWN · Kuching WBGG/KCH · Ujung Pandang WAAA/UPG · Jakarta Halim WIHH/HLP · Jakarta WIII/CGK · Solo WAHQ/SOC · Surabaya WARR/SUB · Denpasar WADD/DPS · Learmonth YPLM/LEA · Perth YPPH/PER.", "OM-A 12.23.17 · p.12-123 I3R7"),
+  N("12.23.17 EAST, 120°E–135°E: Harbin ZYHB/HRB · Changchun ZYCC/CGQ · Dalian ZYTL/DLC · Seoul Kimpo RKSS/SEL · Osan RKSO/OSN · Seoul Incheon RKSI/ICN · Qingdao ZSQD/TAO · Pusan Kimhae RKPK/PUS · Kwangju RKJJ/KWJ · Pohang RKTH/KPO · Cheju RKPC/CJU · Hiroshima RJOA/HIJ · Fukuoka RJFF/FUK · Nagasaki RJFU/NGS · Kumamoto RJFT/KMJ · Kagoshima RJFK/KOJ · Pudong ZSPD/PVG · Shanghai ZSSS/SHA · Hangzhou ZSHC/HGH · Okinawa Kadena RODN/DNA · Taipei RCTP/TPE · Naha ROAH/OKA · Miyakojima ROMY/MMY · Kaohsiung RCKH/KHH · Laoag RPLI/LAO · Clark RPLC/CRK · Manila RPLL/MNL · Subic Bay RPLB/SFS · Cebu Mactan RPVM/CEB · Davao RPMD/DVO · Manado WAMM/MDC · Darwin YPDN/DRW · Tindal YPTN/KTR · Alice Springs YBAS/ASP.", "OM-A 12.23.17 · p.12-124/125 I3R7"),
+  N("12.23.17 EAST, 135°E–165°E: Kushiro RJCK/KUH · Obihiro RJCB/OBO · Sapporo New Chitose RJCC/CTS · Hakodate RJCH/HKD · Sendai RJSS/SDJ · Niigata RJSN/KIJ · Komatsu RJNK/KMQ · Tokyo Haneda RJTT/HND · Tokyo Narita RJAA/NRT · Yokota RJTY/OKO · Nagoya RJGG/NGO · Osaka Kansai RJBB/KIX · Saipan PGSN/SPN · Guam PGUM/GUM · Biak WABB/BIK · Port Moresby AYPY/POM · Cairns YBCS/CNS · Townsville YBTL/TSV · Rockhampton YBRK/ROK · Brisbane YBBN/BNE · Sydney YSSY/SYD · Adelaide YPAD/ADL · Melbourne YMML/MEL · Avalon YMAV/AVV · Hobart YMHB/HBA.", "OM-A 12.23.17 · p.12-125/126 I3R7"),
+  N("12.23.18 WEST of Singapore, 105°E–090°E: Singapore Changi WSSS/SIN · Kunming ZPPP/KMG · Dhaka VGHS/DAC · Chittagong VGEG/CGP · Chiang Rai VTCT/CEI · Chiang Mai VTCC/CNX · Udon Thani VTUD/UTH · Yangon VYYY/RGN · Ubon Ratchathani VTUU/UBP · Bangkok Don Mueang VTBD/DMK · Bangkok Suvarnabhumi VTBS/BKK · Rayong VTBU/UTP · Phnom Penh VDPP/PNH · Phuket VTSP/HKT · Hat Yai VTSS/HDY · Penang WMKP/PEN · Subang WMSA/SZB · Medan WIMM/KNO · Kuala Lumpur WMKK/KUL · Paya Lebar WSAP/QPG · Batam WIDD/BTH.", "OM-A 12.23.18 · p.12-127 I3R7"),
+  N("12.23.18 WEST, 090°E–075°E: Delhi VIDP/DEL · Jaipur VIJP/JAI · Varanasi VEBN/VNS · Kolkata VECC/CCU · Nagpur VANP/NAG · Hyderabad VOHS/HYD · Bangalore VOBL/BLR · Chennai VOMM/MAA · Cochin VOCI/COK · Thiruvananthapuram VOTV/TRV · Colombo VCBI/CMB.", "OM-A 12.23.18 · p.12-127/128"),
+  N("12.23.18 WEST, 075°E–060°E: Bishkek UCFM/FRU · Tashkent UTTT/TAS · Dushanbe UTDD/DYU · Kabul OAKB/KBL · Amritsar VIAR/ATQ · Lahore OPLA/LHE · Karachi OPKC/KHI · Ahmedabad VAAH/AMD · Mumbai VABB/BOM · Male VRMM/MLE.", "OM-A 12.23.18 · p.12-128"),
+  N("12.23.18 WEST, 060°E–045°E: Atyrau UATG/GUW · Baku UBBB/GYD · Tabriz OITT/TBZ · Ashgabat UTAA/ASB · Mashhad OIMM/MHD · Tehran Mehrabad OIII/THR · Tehran Imam Khomeini OIIE/IKA · Esfahan OIFM/IFN · Kerman OIKK/KER · Kuwait OKBK/KWI · Bandar Abbas OIKB/BND · Dammam OEDF/DMM · Bahrain OBBI/BAH · Ras Al Khaimah OMRK/RKT · Sharjah OMSJ/SHJ · Doha OTHH/DOH · Dubai OMDB/DXB · Riyadh OERK/RUH · Dubai Al Maktoum OMDW/DWC · Abu Dhabi OMAA/AUH · Muscat OOMS/MCT · Seychelles FSIA/SEZ · Antananarivo FMMI/TNR · Mauritius FIMP/MRU · St Denis FMEE/RUN.", "OM-A 12.23.18 · p.12-128/129"),
+  N("12.23.18 WEST, 045°E–030°E: Tbilisi UGTB/TBS · Istanbul Ataturk LTBA/IST · Ankara LTAC/ESB · Antalya LTAI/AYT · Larnaca LCLK/LCA · Cairo HECA/CAI · Medina OEMA/MED · Jeddah OEJN/JED.", "OM-A 12.23.18 · p.12-129"),
+  N("12.23.19 Emergency Aerodromes: Banda Aceh WITT/BTJ · Banjarmasin WAOO/BDJ · Baucau-Cakung WPEC/BCH · Cocos Isle YPCC/CCK · Curtin YCIN/CIN · Ha'il OEHL/HAS · Kalgoorlie YPKG/KGI · Learmonth YPLM/LEA · Mt Isa YBMA/ISA · Pearce YPEA/PEA · Port Blair VOPB/IXZ · Port Hedland YPPD/PHE · Zahedan OIZH/ZAH. NOTE on all lists: refer to the Jeppesen manual or NOTAMs for operating times.", "OM-A 12.23.19 · p.12-129/130 I3R7"),
+  N("Related rule: in the aerodrome briefings, alternates tagged ‘E’ are for emergency use only and shall not be nominated as alternates.", "OM-A 12.22.25 §6 b · p.12-108 I3R4")
+]},
+
+{k:"17", title:"FCOM PRO-SPO-40 Extended Range Operations (Airbus side, 26 MAY 26)", nodes:[
+  N("PRO-SPO-40-30 Dispatch consideration – ETOPS critical fuel reserves", "FCOM PRO-SPO-40-30 P1/2 12 AUG 24, Ident 00023321.0001001 03 NOV 21, Applicable: ALL", [
+    N("ICING: the most critical scenario must be compensated for the greater of (A) the effect of airframe icing during 10 % of the time icing is forecast, including ice accumulation on unprotected surfaces and the fuel used by engine and wing anti-ice during this period, or (B) fuel for engine and wing anti-ice for the entire time during which icing is forecast. NOTE: the ETOPS icing fuel reserve is always limited by (B).", "PRO-SPO-40-30 ICING"),
+    N("Unless a reliable icing forecast is available, icing may be presumed when TAT is less than <span class='num'>+10 °C</span>, or when OAT is between <span class='num'>0 °C and −20 °C</span> with relative humidity of <span class='num'>55 %</span> or more.", "PRO-SPO-40-30 ICING"),
+    N("APU: fuel consumption <span class='num'>80 kg/h</span> (APU GEN ON, APU BLEED OFF).", "PRO-SPO-40-30 APU"),
+    N("Airbus recommends that the operator include a contingency fuel provision from departure to the Critical Point when computing ETOPS critical fuel planning.", "PRO-SPO-40-30 APU para"),
+    N("CHECK OF CAS for L/G safety valve closure: flights must be planned with a climb speed profile exceeding <span class='num'>264 kt</span> CAS before reaching top of climb; above 264 kt the L/G Safety Valve automatically closes (ref DSC-32-10-10).", "PRO-SPO-40-30 Ident 00027928.0002001 06 NOV 25, ALL")], 'fcom4030'),
+  N("PRO-SPO-40-40 Diversion during ETOPS – decision making", "FCOM PRO-SPO-40-40 P1/2 17 JAN 23, Ident 00023322.0001001 03 NOV 22, Applicable: ALL", [
+    N("Technical criteria governing a re-routing or diversion decision, four categories: (1) loss of NAT-HLA capability before entering the NAT-HLA area (as applicable); (2) weather minima at diversion airport(s) going below company/crew en-route minima before reaching the ETOPS Entry Point, or diversion airport(s) becoming unsuitable for any reason; (3) failure cases requiring a diversion to the nearest airport (cases leading to a LAND ASAP message on the ECAM and/or in the QRH); (4) failure cases resulting in increased fuel consumption exceeding the available fuel reserves.", "PRO-SPO-40-40 DIVERSION DECISION MAKING"),
+    N("Electrical generation: if one IDG fails, a diversion is required in the case of blue hydraulic circuit low level, low pressure or overheat; or APU no start; or APU or APU generator inoperative; or second IDG failure.", "PRO-SPO-40-40 Comments – Electrical generation"),
+    N("Fuel system: some failure cases may lead to fuel gravity feeding, which implies flight at lower altitude, or to some fuel being unusable. The flight crew's evaluation of the actual situation and the fuel remaining may lead to the decision that a diversion is required.", "PRO-SPO-40-40 Comments – Fuel system"),
+    N("Hydraulic system: if there is low level, low pressure or overheat on the blue hydraulic circuit, a diversion is required in the case of one IDG failure; or APU no start; or APU/APU GEN failure.", "PRO-SPO-40-40 Comments – Hydraulic system"),
+    N("APU: if APU/APU GEN fails, a diversion is required in the case of blue hydraulic circuit low level, low pressure or overheat; or one IDG failure.", "PRO-SPO-40-40 Comments – APU"),
+    N("Pattern to memorise: three legs – an IDG, the APU GEN and the blue system (which powers the emergency generator). Lose any two → diversion required. Lose one → continue, start/verify the APU. <span class='tag gen'>synthesis</span>", "Synthesis of PRO-SPO-40-40 and PRO-SPO-40-50")], 'fcom4040'),
+  N("PRO-SPO-40-50 Procedures", "FCOM PRO-SPO-40-50 P1–3/4 18 FEB 26", [
+    N("GENERAL: for ETOPS flights the crew must apply the procedures below in addition to the SOP (PRO-NOR-SOP) and the abnormal/emergency procedures (PRO-ABN).", "PRO-SPO-40-50 GENERAL Ident 00002051.0001001 26 JUN 17, ALL"),
+    N("NORMAL – Cockpit preparation, FUEL: before each ETOPS flight the crew must check that the fuel crossfeed valve operates correctly: FUEL X FEED … ON, check on ECAM FUEL page that the crossfeed valve is open (in-line green); FUEL X FEED … OFF, check the valve is closed.", "PRO-SPO-40-50 NORMAL PROCEDURES Ident 00021794.0002001 26 JUN 17, ALL", undefined, 'xfeed'),
+    N("ABNORMAL – ELECTRICAL EMERGENCY CONFIGURATION, complete the ECAM procedure using: AIR CONDITIONING – cockpit and cabin temperature control is lost, it is recommended to open the cockpit door. FUEL – all fuel pumps are lost, engines are fed by gravity, refer to GRVTY FUEL FEEDING. ENGINE ANTI-ICE – valves are permanently open although the ENG A.ICE memo is not displayed (except if the ENG A.ICE pb is ON). WING ANTI-ICE – if only one ENG BLEED is available, PACK 1 must be switched OFF, to avoid both packs and wing anti-ice supplied by a single bleed source.", "PRO-SPO-40-50 ABNORMAL, TRx Ident 00002053.0006001 05 JUN 18; TNx/NCx Ident 00002053.0011001 21 MAR 17"),
+    N("ABNORMAL – ENGINE (TRx only): as the engines are in degraded N1 mode, the power setting has to be done using the tables in EFB-THR-N1 N1 MODE THRUST CONTROL and following. This paragraph does not appear in the TNx/NCx ident. <span class='tag ok'>variant</span>", "PRO-SPO-40-50 P2/4 ENGINE (TRx ident only)"),
+    N("ABNORMAL – BLUE HYDRAULIC CIRCUIT LOW LEVEL or LOW PRESSURE or OVERHEAT: start the APU to ensure availability of the APU generator.", "PRO-SPO-40-50 all frames"),
+    N("ABNORMAL – ENGINE or IDG FAILURE: start the APU and use the APU electrical channel.", "PRO-SPO-40-50 all frames"),
+    N("ABNORMAL – LOSS OF AIR CONDITIONING (loss of both packs, loss of both bleeds without APU bleed etc.): when at FL 100 with the RAM AIR opened, the CAB FANS must be switched off.", "PRO-SPO-40-50 all frames")]),
+  N("PRO-SPO-40-60 Performance – Maximum diversion distance tables (nm). Conditions: ISA, no wind, optimum diversion level after engine failure, single-engine diversion speed schedule. NOTE: obstacles are not to be considered to determine if a route is or is not an ETOPS route.", "FCOM PRO-SPO-40-60 P1–4/4 18 FEB 26", [
+    N("A320ceo TRx (9V-TRO/TRP/TRS/TRT/TRU/TRV), Ident 00023324.0053001 17 NOV 20<div class='tblwrap'><table><tr><th>Schedule</th><th>Weight at CP (kg)</th><th>FL</th><th>60</th><th>90</th><th>120</th><th>150</th><th>180</th></tr><tr><td>MCT/VMO</td><td>50 000</td><td>210</td><td class='r'>427</td><td class='r'>637</td><td class='r'>847</td><td class='r'>1057</td><td class='r'>1267</td></tr><tr><td></td><td>55 000</td><td>200</td><td class='r'>428</td><td class='r'>636</td><td class='r'>845</td><td class='r'>1054</td><td class='r'>1263</td></tr><tr><td></td><td>60 000</td><td>200</td><td class='r'>426</td><td class='r'>634</td><td class='r'>841</td><td class='r'>1049</td><td class='r'>1257</td></tr><tr><td></td><td>65 000</td><td>180</td><td class='r'>427</td><td class='r'>633</td><td class='r'>840</td><td class='r'>1046</td><td class='r'>1253</td></tr><tr><td></td><td>70 000</td><td>170</td><td class='r'>427</td><td class='r'>631</td><td class='r'>836</td><td class='r'>1042</td><td class='r'>1247</td></tr><tr><td></td><td>75 000</td><td>150</td><td class='r'><span class='num'>427</span></td><td class='r'>630</td><td class='r'><span class='num'>833</span></td><td class='r'>1037</td><td class='r'>1241</td></tr><tr><td></td><td>80 000</td><td>130</td><td class='r'>426</td><td class='r'>628</td><td class='r'>830</td><td class='r'>1032</td><td class='r'>1235</td></tr><tr><td>MCT/320 kt</td><td>50 000</td><td>210</td><td class='r'>427</td><td class='r'>637</td><td class='r'>847</td><td class='r'>1057</td><td class='r'>1267</td></tr><tr><td></td><td>55 000</td><td>200</td><td class='r'>426</td><td class='r'>635</td><td class='r'>843</td><td class='r'>1053</td><td class='r'>1262</td></tr><tr><td></td><td>60 000</td><td>200</td><td class='r'>425</td><td class='r'>632</td><td class='r'>840</td><td class='r'>1048</td><td class='r'>1256</td></tr><tr><td></td><td>65 000</td><td>190</td><td class='r'>423</td><td class='r'>629</td><td class='r'>835</td><td class='r'>1042</td><td class='r'>1249</td></tr><tr><td></td><td>70 000</td><td>180</td><td class='r'>421</td><td class='r'>626</td><td class='r'>831</td><td class='r'>1036</td><td class='r'>1242</td></tr><tr><td></td><td>75 000</td><td>170</td><td class='r'>419</td><td class='r'>622</td><td class='r'>825</td><td class='r'>1029</td><td class='r'>1232</td></tr><tr><td></td><td>80 000</td><td>160</td><td class='r'>416</td><td class='r'>617</td><td class='r'>817</td><td class='r'>1018</td><td class='r'>1219</td></tr></table></div>", "FCOM PRO-SPO-40-60 P1/4"),
+    N("A320neo TNx (9V-TNA…TNM), Ident 00023324.0024001 17 NOV 20<div class='tblwrap'><table><tr><th>Schedule</th><th>Weight at CP (kg)</th><th>FL</th><th>60</th><th>90</th><th>120</th><th>150</th><th>180</th></tr><tr><td>MCT/VMO</td><td>50 000</td><td>160</td><td class='r'>419</td><td class='r'>623</td><td class='r'>827</td><td class='r'>1031</td><td>–</td></tr><tr><td></td><td>55 000</td><td>160</td><td class='r'>417</td><td class='r'>619</td><td class='r'>822</td><td class='r'>1025</td><td class='r'>1229</td></tr><tr><td></td><td>60 000</td><td>150</td><td class='r'>416</td><td class='r'>617</td><td class='r'>818</td><td class='r'>1019</td><td class='r'>1221</td></tr><tr><td></td><td>65 000</td><td>150</td><td class='r'>414</td><td class='r'>613</td><td class='r'>813</td><td class='r'>1013</td><td class='r'>1213</td></tr><tr><td></td><td>70 000</td><td>140</td><td class='r'>412</td><td class='r'>609</td><td class='r'>806</td><td class='r'>1004</td><td class='r'>1202</td></tr><tr><td></td><td>75 000</td><td>140</td><td class='r'><span class='num'>409</span></td><td class='r'>604</td><td class='r'><span class='num'>799</span></td><td class='r'>995</td><td class='r'>1191</td></tr><tr><td></td><td>80 000</td><td>130</td><td class='r'>406</td><td class='r'>597</td><td class='r'>790</td><td class='r'>982</td><td class='r'>1176</td></tr><tr><td>MCT/320 kt</td><td>50 000</td><td>180</td><td class='r'>418</td><td class='r'>621</td><td class='r'>826</td><td class='r'>1030</td><td>–</td></tr><tr><td></td><td>55 000</td><td>180</td><td class='r'>416</td><td class='r'>618</td><td class='r'>821</td><td class='r'>1024</td><td class='r'>1228</td></tr><tr><td></td><td>60 000</td><td>160</td><td class='r'>414</td><td class='r'>614</td><td class='r'>815</td><td class='r'>1016</td><td class='r'>1216</td></tr><tr><td></td><td>65 000</td><td>160</td><td class='r'>412</td><td class='r'>611</td><td class='r'>810</td><td class='r'>1010</td><td class='r'>1210</td></tr><tr><td></td><td>70 000</td><td>150</td><td class='r'>410</td><td class='r'>607</td><td class='r'>805</td><td class='r'>1002</td><td class='r'>1200</td></tr><tr><td></td><td>75 000</td><td>150</td><td class='r'>406</td><td class='r'>601</td><td class='r'>797</td><td class='r'>993</td><td class='r'>1190</td></tr><tr><td></td><td>80 000</td><td>150</td><td class='r'>403</td><td class='r'>594</td><td class='r'>787</td><td class='r'>980</td><td class='r'>1175</td></tr></table></div>", "FCOM PRO-SPO-40-60 P4/4"),
+    N("A321neo NCx (9V-NCA…NCO), Ident 00023324.0028001 17 NOV 20<div class='tblwrap'><table><tr><th>Schedule</th><th>Weight at CP (kg)</th><th>FL</th><th>60</th><th>90</th><th>120</th><th>150</th><th>180</th></tr><tr><td>MCT/VMO</td><td>55 000</td><td>110</td><td class='r'>419</td><td class='r'>622</td><td class='r'>825</td><td>–</td><td>–</td></tr><tr><td></td><td>60 000</td><td>110</td><td class='r'>418</td><td class='r'>620</td><td class='r'>821</td><td class='r'>1023</td><td class='r'>1226</td></tr><tr><td></td><td>65 000</td><td>110</td><td class='r'>417</td><td class='r'>617</td><td class='r'>818</td><td class='r'>1019</td><td class='r'>1220</td></tr><tr><td></td><td>70 000</td><td>110</td><td class='r'>416</td><td class='r'>615</td><td class='r'>815</td><td class='r'>1014</td><td class='r'>1214</td></tr><tr><td></td><td>75 000</td><td>100</td><td class='r'>415</td><td class='r'>613</td><td class='r'>811</td><td class='r'>1010</td><td class='r'>1209</td></tr><tr><td></td><td>80 000</td><td>100</td><td class='r'>414</td><td class='r'>610</td><td class='r'>807</td><td class='r'>1005</td><td class='r'>1202</td></tr><tr><td></td><td>85 000</td><td>100</td><td class='r'>412</td><td class='r'>607</td><td class='r'>803</td><td class='r'>999</td><td class='r'>1196</td></tr><tr><td></td><td>90 000</td><td>100</td><td class='r'><span class='num'>410</span></td><td class='r'>604</td><td class='r'><span class='num'>798</span></td><td class='r'>993</td><td class='r'>1188</td></tr><tr><td></td><td>95 000</td><td>100</td><td class='r'>408</td><td class='r'>600</td><td class='r'>792</td><td class='r'>985</td><td class='r'>1178</td></tr><tr><td></td><td>100 000</td><td>100</td><td class='r'>405</td><td class='r'>595</td><td class='r'>785</td><td class='r'>976</td><td class='r'>1168</td></tr><tr><td>MCT/320 kt</td><td>55 000</td><td>170</td><td class='r'>415</td><td class='r'>618</td><td class='r'>821</td><td>–</td><td>–</td></tr><tr><td></td><td>60 000</td><td>170</td><td class='r'>413</td><td class='r'>615</td><td class='r'>816</td><td class='r'>1018</td><td class='r'>1221</td></tr><tr><td></td><td>65 000</td><td>160</td><td class='r'>412</td><td class='r'>613</td><td class='r'>813</td><td class='r'>1014</td><td class='r'>1214</td></tr><tr><td></td><td>70 000</td><td>160</td><td class='r'>410</td><td class='r'>609</td><td class='r'>808</td><td class='r'>1008</td><td class='r'>1208</td></tr><tr><td></td><td>75 000</td><td>150</td><td class='r'>409</td><td class='r'>606</td><td class='r'>804</td><td class='r'>1002</td><td class='r'>1199</td></tr><tr><td></td><td>80 000</td><td>150</td><td class='r'>406</td><td class='r'>602</td><td class='r'>798</td><td class='r'>995</td><td class='r'>1192</td></tr><tr><td></td><td>85 000</td><td>140</td><td class='r'>404</td><td class='r'>598</td><td class='r'>792</td><td class='r'>986</td><td class='r'>1181</td></tr><tr><td></td><td>90 000</td><td>130</td><td class='r'>402</td><td class='r'>593</td><td class='r'>785</td><td class='r'>977</td><td class='r'>1169</td></tr><tr><td></td><td>95 000</td><td>120</td><td class='r'>400</td><td class='r'>589</td><td class='r'>779</td><td class='r'>968</td><td class='r'>1157</td></tr><tr><td></td><td>100 000</td><td>120</td><td class='r'>396</td><td class='r'>584</td><td class='r'>772</td><td class='r'>961</td><td class='r'>1151</td></tr></table></div>", "FCOM PRO-SPO-40-60 P2–3/4")], 'fcom4060')
+]},
+
+{k:"18", title:"FCOM1A and adjacent OM-A chapters that 12.23 leans on", nodes:[
+  N("FCOM1A 2.4.2.1 Overhead panel, FUEL: FUEL X-FEED … OFF. NOTE: before each EDTO flight, Flight Crew must check that the fuel crossfeed valve is operating correctly: FUEL X-FEED ON, check the valve open on the ECAM FUEL page; FUEL X-FEED OFF, check the valve closed. (Same check as PRO-SPO-40-50; FCOM1A is the SOP you fly.)", "FCOM1A Ch 2 Normal Procedures · p.2-24 I4R1 01 FEB 2025"),
+  N("OM-A 12.22.24 §1 a: for the first flight of the day or for an EDTO sector, refuelling and recording is carried out by the Engineer. On all other flights the crew enter the Total Ramp Fuel and check the ±3 % (max ±500 kg) uplift tolerance.", "OM-A 12.22.24 §1 a–b · p.12-107 I3R4"),
+  N("OM-A 12.22.2 §4 b: take-off alternate must be within (i) one hour of flight time at the OEI cruising speed, ISA still air, actual take-off mass; or (ii) for aircraft dispatched under EDTO where no alternate meets (i), the first available alternate within the operator's approved maximum diversion distance at the actual take-off mass. §4 c: a take-off alternate is required when departure weather is below landing minima or return is not possible for other reasons.", "OM-A 12.22.2 §4 b–c · p.12-82 I3R4"),
+  N("OM-A 12.24.2 §2 g table – distance of the take-off alternate from the departure aerodrome: A320ceo/neo and A321neo <span class='num'>409 nm</span> for flights not exceeding the EDTO threshold time, <span class='num'>798 nm</span> for flights exceeding it; must be forecast above alternate minima from 1 h before to 1 h after ETA. <span class='tag warn'>" + J('c83','conflict 8.3') + "</span>", "OM-A 12.24.2 §2 g · p.12-133 I3R5"),
+  N("OM-A 12.22.2 §5: Enroute Alternate Aerodrome definition (same three criteria as 12.23.6 §1) and §5 e: EDTO ERAs for two-turbine-engine EDTO shall be selected and specified in the operational and ATC flight plans.", "OM-A 12.22.2 §5 a–e · p.12-82"),
+  N("OM-A 12.22.2 §23 Equi-Time Point: the point between two aerodromes from which it takes equal time to fly to either, all engines operating or with an engine inoperative. OM-A 12.22.21 §1 one-engine ETP formula: Distance to ETP = (D × H) / (O + H), D = distance between aerodromes, O = G/S out, H = G/S home. §2: time to ETP = time to the preceding fuel checkpoint + time from that point at the stage ground speed.", "OM-A 12.22.2 §23 · p.12-90; 12.22.21 §1–2 · p.12-104 I3R4", undefined, 'etp'),
+  N("OM-A 12.22.7 Depressurisation or engine-failure fuel (all routes): in all cases depressurisation has been determined to be the most limiting. Total fuel must permit flight at LRC from any point along track to an enroute aerodrome at <span class='num'>10 000 ft</span> with fuel for 15 min holding at 1500 ft above aerodrome elevation in standard conditions, and an approach and landing.", "OM-A 12.22.7 §1–2 · p.12-92 I3R6"),
+  N("OM-A 12.14.2 §2 minimum acceptable aerodrome RFFS: row (v) Enroute alternate (ERA) Cat <span class='num'>4</span> for all fleets. NOTE: use of a Cat 4 ERA for flight planning requires the Commander to give at least 30-minute notice to the aerodrome prior to arrival. §5: in flight the Commander may land at an aerodrome regardless of RFFS category if that is the safest course. Aeroplane categories: A320ceo/neo 6, A321neo 7.", "OM-A 12.14.2 §2 row (v) + NOTE · p.12-36 I3R5; §5 · p.12-37 I3R7; 12.14.1 §4 · p.12-35", undefined, 'rffs'),
+  N("OM-A 12.22.11 Diversion to alternate (general): consider a company destination or a passenger-handling-friendly aerodrome; inform the Company and, conditions permitting, divert where they recommend; the tabulated alternates are not limiting; plan to arrive with Final Reserve; annotate the OFP.", "OM-A 12.22.11 §1–4 + NOTE · p.12-95 I3R6"),
+  N("OM-A 12.24.2 §4 ordinary alternate planning minima (for contrast with EDTO minima): CAT II/III → CAT I; CAT I → NPA; NPA → NPA + 200 ft / 1000 m; circling → circling; TEMPO/PROB of persistent conditions disqualify, transient TS/showers do not.", "OM-A 12.24.2 §4 a–d · p.12-133/134")
+]},
+
+{k:"19", title:"Conflicts surfaced (not smoothed over)", kind:"warn", nodes:[
+  N("8.1 OM-A 12.23.8 §4 c and 12.23.14 §4 cite an “ETOPS Fuel Requirement From Critical Point To Landing – One Engine Out – Cruise At 350 kt” table in FCOM PRO-SPO-40-60. The FCOM 26 MAY 26 PRO-SPO-40-60 in this project (P1–4/4) contains only MAXIMUM DIVERSION DISTANCE tables at MCT/VMO and MCT/320 kt. No 350 kt or fuel-from-CP table was found. Ask Fleet where this table now lives (QRH, Operational References, EFB performance tool) before quoting it.", "OM-A p.12-115 I3R6, p.12-122 I3R7 vs FCOM PRO-SPO-40-60 18 FEB 26", undefined, 'c81'),
+  N("8.2 Speed schedule label: OM-A 12.23.2 §3 says “MMO/VMO”; the FCOM tables say “MCT/VMO” (MCT thrust at VMO) and offer a second schedule, MCT/320 kt. Same intent. Cite the FCOM wording for performance and the OM-A wording for the approval.", "OM-A p.12-109 vs FCOM PRO-SPO-40-60", undefined, 'c82'),
+  N("8.3 A320ceo 60-min distance: 12.23.2 §4 gives 427 nm, but the take-off alternate table in 12.24.2 §2 g gives 409 nm for “A320ceo/neo” and 798 nm under EDTO (the neo figures). Treat the take-off alternate table as deliberately conservative for a mixed fleet; the EDTO area of operation for a CEO remains 427 / 833.", "OM-A p.12-110 I3R5 vs p.12-133 I3R5", undefined, 'c83'),
+  N("8.4 OM-A 12.23.14 §5 NOTE calls the Fixed Speed Strategy “the most fuel conservative”, while §2 b says fixed speed gives minimum time at the expense of fuel and §2 c says LRC gives best fuel. Read the NOTE as “most conservative for planning” (highest burn, so the most fuel is carried), not lowest burn.", "OM-A p.12-121/122", undefined, 'c84'),
+  N("8.5 PRO-SPO-40-40 lists diversion-airport weather “going below the company/crew en-route minima before reaching the ETOPS Entry Point” as a re-route criterion. OM-A applies EDTO planning minima at dispatch (12.23.6/12.23.10) and landing minima in flight (12.23.12 §2 a ii and NOTE). They agree once the two minima are kept separate.", "FCOM PRO-SPO-40-40 vs OM-A 12.23.6 / 12.23.12", undefined, 'c85'),
+  N("8.6 The fuel X-feed check appears in FCOM PRO-SPO-40-50 (cockpit preparation) and in FCOM1A 2.4.2.1 (overhead scan, FUEL X-FEED item). Same check; follow FCOM1A as the SOP.", "FCOM1A p.2-24 I4R1; FCOM PRO-SPO-40-50 P1/4", undefined, 'c86'),
+  N("8.7 OM-A 12.23.3 §2–3 say the onboard charts and Jepp FD-Pro carry “120/180-minute” circles; only the 120-min ring applies to the A320 (12.23.2 §4 shows no 180-min distance for the A320 family).", "OM-A p.12-110", undefined, 'c87')
+]},
+
+{k:"20", title:"Not in the project store (ask or add)", kind:"gap", nodes:[
+  N("MEL 22 MAY 26: the ETOPS-tagged items and the Preamble dispatch definition referenced by OM-A 12.23.10 §1 and 12.23.11 §1. Local only.", "corpus: MEL local"),
+  N("OM-D I8R1: the EDTO training syllabus and the familiarisation-flight requirement behind OM-A 12.23.4 §3. Local only.", "corpus: OM-D local"),
+  N("EDTO Manual I3R0 (B787-titled): may hold planning-chart conventions and FPS top-up logic. Local only; not read for this map.", "corpus: EDTO Manual local"),
+  N("FCOM PRO-SPO-40-10 / 40-20 (regulatory background, required equipment): not present in the extracted PRO-SPO chapter, which starts at 40-30 on pdf p.4895. Confirm whether the Scoot FCOM carries them.", "corpus: FCOM PRO-SPO extract p.4895–4906"),
+  N("QRH and Operational References: candidate homes for the “fuel from CP to landing” tables (conflict 8.1).", "corpus: QRH / OpRef local"),
+  N("Figures: OM-A 12.23.5 §6 requirements illustration (p.12-112) and the EDTO Planning Chart itself are not in the text extract; view on the PDF/EFB.", "OM-A p.12-112")
+]},
+
+{k:"21", title:"Examiner probes (command lens)", kind:"ok", nodes:[
+  N("<span class='q'>Q: What does the 120-minute approval actually certify?</span><br><span class='a'>A: An operational approval from CAAS resting on the six conditions of 12.23.5 §5 (type certification, propulsion reliability per Doc 9760, special maintenance, dispatch requirements, in-flight procedures, CAAS approval). It is not an aircraft performance limit; the distance is a still-air planning circle (12.23.2 §4, PRO-SPO-40-60 conditions).</span>", "OM-A 12.23.2, 12.23.5 §5; FCOM PRO-SPO-40-60"),
+  N("<span class='q'>Q: An ERA TAF drops to just above landing minima but below EDTO planning minima, 20 min before the Entry Point. Re-route?</span><br><span class='a'>A: Not required by the rule: before the Entry Point the in-flight test is landing minima (12.23.12 §2 a ii and NOTE). The decision then rests on 12.23.5 §3 (have an alternative course of action) and your assessment of the trend. State which ERA you would use instead.</span>", "OM-A 12.23.12 §2, 12.23.5 §3"),
+  N("<span class='q'>Q: Estimated FOB at the CP will be 300 kg below the OFP critical fuel. Divert?</span><br><span class='a'>A: No, provided estimated destination fuel is above the minimum to divert to the destination alternate (12.23.12 §7 b). The CP is not a re-clearance point. Minimise burn, re-base critical fuel on actual conditions (icing reserve may not apply, §7 c), and note it so dispatch can correct the planning factor (§7 d).</span>", "OM-A 12.23.12 §7"),
+  N("<span class='q'>Q: IDG 1 fails in the segment; the APU starts and APU GEN comes on line. Continue?</span><br><span class='a'>A: A diversion is required only with a second loss (blue hydraulic, APU no start, APU/APU GEN inop, second IDG). With the APU channel supplying you are not in a mandatory-diversion case; apply the ECAM, the 40-50 supplement (use the APU electrical channel) and weigh remaining exposure against time to the Exit Point.</span>", "FCOM PRO-SPO-40-40, 40-50"),
+  N("<span class='q'>Q: Same IDG failure but the APU will not start. Where do you go?</span><br><span class='a'>A: Diversion required (40-40, electrical generation: one IDG + APU no start). Nearest suitable ERA in time; the Commander may choose a more distant one for weather or runway (12.23.15 §3); speed strategy at discretion (12.23.13 §3).</span>", "FCOM PRO-SPO-40-40; OM-A 12.23.15, 12.23.13"),
+  N("<span class='q'>Q: Engine failure at the CP. First actions.</span><br><span class='a'>A: Notify ATC, start the drift-down; area QNH on the standby altimeter against OFP MORA; choose a strategy (obstacle / fixed speed / LRC) and the ERA; confirm fuel ≥ diversion + reserve from the tables and the FMS prediction (12.23.14 §1–5).</span>", "OM-A 12.23.14"),
+  N("<span class='q'>Q: What may a nominated EDTO ERA have in its TAF, and what disqualifies it?</span><br><span class='a'>A: It must meet DH/DA +200 ft and vis +800 m (CAT I precision) or MDH/MDA +400 ft and vis +1500 m (NPA/circling) at the time of use, with wind and gusts within limits for the runway state. TEMPO or PROB40 of fog, mist, haze, dust/sandstorm or continuous precipitation below those minima disqualifies it; transient TS/SH are not in that list.</span>", "OM-A 12.23.6 §2"),
+  N("<span class='q'>Q: Why does the Engineer refuel on an EDTO sector, and why the X-feed check?</span><br><span class='a'>A: Policy (12.22.24 §1 a) puts refuelling and recording with the Engineer on first flight and EDTO sectors. The X-feed check (FCOM1A 2.4.2.1 / PRO-SPO-40-50) proves the valve that keeps all fuel usable on one engine actually moves.</span>", "OM-A 12.22.24; FCOM1A 2.4.2.1; FCOM PRO-SPO-40-50"),
+  N("<span class='q'>Q: APU in-flight start comes up on your SIN-bound sector. What do you do and record?</span><br><span class='a'>A: Within 5 days of expiry, max 3 attempts before TOD, conditions permitting; Tech Log entry with attempts, time, altitude, SAT and any advisory messages; APU In-Flight Start form if applicable; shut down after success and restart after landing per SOP. An unsuccessful start does not make the APU inop.</span>", "OM-A 12.23.11 §2"),
+  N("<span class='q'>Q: A defect appears after push-back but before the take-off roll. MEL?</span><br><span class='a'>A: The MEL Preamble dispatch definition applies; a failure before the start of the take-off roll is a crew judgement/airmanship decision. In flight, MEL reference is not required inside or outside the segment (12.23.11 §1). This does not relieve you of the ETOPS-tagged item rule at dispatch (12.23.10 §1).</span>", "OM-A 12.23.11 §1, 12.23.10 §1"),
+  N("<span class='q'>Q: ZFW comes in 800 kg lower than planned on a flight with an EDTO top-up. Reduce the burn-off?</span><br><span class='a'>A: No. 12.23.10 §2 g: with a top-up planned, do not adjust burn-off downward for a lower ZFW; the top-up protects the diversion case at the CP, not the trip. Higher ZFW → normal adjustment applies.</span>", "OM-A 12.23.10 §2 g"),
+  N("<span class='q'>Q: Can you build the Entry/Exit points as FMGS waypoints?</span><br><span class='a'>A: Annotate ETAs in the OFP and display them with FIX INFO / abeam from the nearest route waypoint; the OM-A NOTE says Flight Crew shall not create additional waypoints in the FMC/FMGS (12.23.12 §3).</span>", "OM-A 12.23.12 §3")
+]}
+];
+
+// Timeline: P(phase) / S(step, ref, jumpId)
+const P = (t) => ({ph:t});
+const S = (t, r, id) => ({t, r, id});
+const T = [
+  P("Dispatch – crew room / flight planning"),
+  S("Confirm the route is an EDTO route: any point more than 60 min (OEI, still air) from an ERA puts you beyond threshold time → dispatch under EDTO. Check the EDTO Planning Chart / Jepp FD-Pro 120-min rings.", "OM-A 12.23.10 §3 a; 12.23.3 §2–3; 12.23.7 §1", "b10"),
+  S("Tech Log / MEL: no open item tagged ETOPS. If there is one, no dispatch authorisation.", "OM-A 12.23.10 §1 a i–ii", "b10"),
+  S("Crew: both pilots EDTO trained and have done the EDTO Familiarisation Flight with an Instructor.", "OM-A 12.23.4 §3 b", "b4"),
+  S("ERAs on the OFP: TAF at the estimated time of use meets EDTO planning minima (CAT I +200 ft / +800 m; NPA or circling +400 ft / +1500 m), wind+gust within limits for the runway state, no TEMPO/PROB40 fog-mist-haze-dust-continuous precipitation below minima, RFFS Cat 4 (30-min notice if off-airport).", "OM-A 12.23.10 §2 a; 12.23.6 §1 NOTE, §2 a–c", "minima"),
+  S("Departure, destination and destination alternate: standard-policy weather, unless one of them is also a nominated ERA (then EDTO minima apply to it).", "OM-A 12.23.10 §2 b", "b10"),
+  S("NOTAMs: runway, facilities and navaids at each ERA available for the relevant period.", "OM-A 12.23.10 §2 c", "b10"),
+  S("OFP vs EDTO chart: ERAs correctly nominated and annotated; Entry/Exit point ETAs annotated in order among the waypoints; ETPs and the CP shown. ATC flight plan marked EDTO with the same ERAs.", "OM-A 12.23.10 §2 d–e; 12.23.12 §3 a–b", "b12"),
+  S("Fuel: the FPS has already run the critical fuel scenario; any EDTO top-up appears in the OFP Minimum Fuel. Read the CP fuel line. Mandated reserves per 12.23.9 §3.", "OM-A 12.23.10 §2 f; 12.23.8 §4; 12.23.9 §3", "critfuel"),
+  S("ZFW change: with an EDTO top-up planned, do NOT reduce burn-off if ZFW comes in lower; higher ZFW gets the normal adjustment.", "OM-A 12.23.10 §2 g", "b10"),
+  S("Take-off alternate (if departure weather below landing minima): under EDTO it may be up to 798 nm, else 409 nm; forecast above alternate minima ETA ±1 h.", "OM-A 12.24.2 §2 g; 12.22.2 §4 b", "b18"),
+  S("Refuelling: on an EDTO sector the Engineer refuels and records.", "OM-A 12.22.24 §1 a", "b18"),
+  P("Cockpit preparation"),
+  S("FUEL X FEED … ON, confirm valve open (in-line green) on the FUEL page; FUEL X FEED … OFF, confirm closed.", "FCOM1A 2.4.2.1; FCOM PRO-SPO-40-50", "xfeed"),
+  S("Check whether an APU in-flight start is due (IOCC/Engineering notification; SIN-bound sector only; attempt within 5 days of expiry). Plan it for the cruise.", "OM-A 12.23.11 §2 a–c + NOTE", "b11"),
+  S("Build Entry/Exit points for the ND with FIX INFO (BRG/DIST from the nearest route waypoint). Do not insert extra FMGS waypoints.", "OM-A 12.23.12 §3 c + NOTE", "b12"),
+  S("Departure brief includes: segment Entry/Exit ETAs, nominated ERAs and their minima/RFFS, CP and critical fuel, drift-down strategy and ERA choice for an engine failure, IOCC comms path (VHF/ACARS/SATCOM, 5-min ACARS response).", "Content drawn from OM-A 12.23.12 §2, 12.23.14 §2, 12.23.10 §4", "b12"),
+  P("Before the take-off roll"),
+  S("A failure now is a crew-judgement decision under the MEL Preamble dispatch definition. Once the take-off roll starts, the MEL is no longer the reference, inside or outside the segment.", "OM-A 12.23.11 §1 a", "b11"),
+  P("Climb"),
+  S("Climb profile above 264 kt CAS before top of climb so the L/G safety valve closes (a planning check Airbus requires for ETOPS dispatch).", "FCOM PRO-SPO-40-30 CHECK OF CAS", "fcom4030"),
+  P("Cruise – before the Entry Point (the re-evaluation gate)"),
+  S("Get updated TAFs for the nominated ERAs via ACARS; if unobtainable, the dispatch TAF suffices.", "OM-A 12.23.12 §2 a i", "b12"),
+  S("Evaluate aircraft status, fuel remaining, and where possible field conditions, services and facilities at the ERAs.", "OM-A 12.23.12 §2", "b12"),
+  S("ERA forecast below LANDING minima → re-nominate another ERA or re-route so you stay within 120 min of an ERA at or above landing minima; next nearest ERA if that is not possible. A re-route needs the critical fuel study redone for the remaining route (crew or IOCC).", "OM-A 12.23.12 §2 a ii–iii, §4–5", "b12"),
+  S("Also re-route or divert before the Entry Point for: a failure that raises fuel burn beyond reserves; loss of NAT-HLA capability (if applicable); any LAND ASAP case; an ERA becoming unsuitable for any reason.", "OM-A 12.23.12 §6; FCOM PRO-SPO-40-40", "fcom4040"),
+  S("Any IDG, APU/APU GEN or blue-hydraulic degradation before entry: with two of the three lost a diversion is required; with one lost, start the APU and reconsider committing.", "FCOM PRO-SPO-40-40 comments", "fcom4040"),
+  P("At the Entry Point"),
+  S("Cross the point with the re-evaluation done. From here, weather at an ERA falling below landing minima no longer requires a change of course; you still keep track of which ERA is usable now.", "OM-A 12.23.12 §2 b i + NOTE; 12.23.5 §3", "b12"),
+  P("Inside the segment"),
+  S("Stay informed of significant changes at the ERAs; judge them against landing minima, not EDTO planning minima.", "OM-A 12.23.12 §1, §2 b NOTE", "b12"),
+  S("Fuel: compare FOB at the CP with the OFP figure, but the CP is not a re-clearance point. Being short at the CP does not force a diversion as long as destination fuel ≥ fuel to divert to the destination alternate. Minimise burn; the OFP icing reserve may not apply.", "OM-A 12.23.12 §7 a–c", "b12"),
+  S("Any ECAM failure: run the ECAM, then apply the ETOPS supplements (start the APU for engine/IDG failure or blue-hydraulic low level/pressure/overheat; ELEC EMER CONFIG items; CAB FANS OFF at FL 100 with ram air).", "FCOM PRO-SPO-40-50", "b17"),
+  S("Engine failure or precautionary shutdown: notify ATC, drift-down; area QNH on the standby altimeter against OFP MORA; choose obstacle / fixed-speed / LRC strategy; choose the ERA (listed or any suitable); confirm fuel ≥ diversion + reserve; use the FMS prediction.", "OM-A 12.23.14 §1–5", "b14"),
+  S("LAND ASAP: nearest suitable aerodrome in time, or a more distant one for weather/runway if safer; persistent smoke or fire → nearest aerodrome, earliest landing and evacuation.", "OM-A 12.23.15 §1–4; 12.23.13 §1", "b15"),
+  S("You are not bound by pre-flight EDTO rules: any aerodrome, any speed strategy (max speed if time-critical), the actual situation decides.", "OM-A 12.23.13 §2–3; 12.23.4 §4 NOTE", "b13"),
+  P("Exit Point"),
+  S("Back within 60 min of an ERA. Normal company fuel policy and diversion policy continue to apply.", "OM-A 12.23.7 §1; 12.23.12 §7 a", "b7"),
+  P("Descent and after landing"),
+  S("APU in-flight start if due: max 3 attempts, before top of descent, conditions permitting. Record attempts, time, altitude, SAT and any advisory messages in the Tech Log; APU In-Flight Start form if applicable; shut down after a successful start and restart after landing per SOP.", "OM-A 12.23.11 §2 d–g", "b11"),
+  S("If you diverted or re-nominated: annotate the OFP and complete the Voyage Report; if the CP was overflown short of critical fuel, say so, so dispatch can correct the planning factor.", "OM-A 12.22.11 NOTE; 12.23.12 §7 d", "b12")
+];
+const tlist=document.getElementById('tlist');
+T.forEach((x,i)=>{
+  const li=document.createElement('li'); li.id='t'+i;
+  if(x.ph){li.className='ph';li.textContent=x.ph;}
+  else{
+    const s=document.createElement('span');s.className='step';s.innerHTML=x.t+(x.id?' '+J(x.id,'open'):'');li.appendChild(s);
+    const r=document.createElement('span');r.className='ref';r.textContent=x.r;li.appendChild(r);
+  }
+  tlist.appendChild(li);
+});
+
+let autoId = 0;
+const branches = document.getElementById('branches');
+const chips = document.getElementById('chips');
+function render(nodes){
+  const ul = document.createElement('ul');
+  nodes.forEach(n=>{
+    const li = document.createElement('li');
+    li.id = n.id || ('n' + (++autoId));
+    if(n.c){
+      const d = document.createElement('details');
+      const s = document.createElement('summary'); s.innerHTML = n.t;
+      d.appendChild(s);
+      if(n.r){const r=document.createElement('span');r.className='ref';r.textContent=n.r;d.appendChild(r);}
+      d.appendChild(render(n.c));
+      li.appendChild(d);
+    } else {
+      const sp = document.createElement('span'); sp.className='leaf'; sp.innerHTML = n.t;
+      li.appendChild(sp);
+      if(n.r){const r=document.createElement('span');r.className='ref';r.textContent=n.r;li.appendChild(r);}
+    }
+    ul.appendChild(li);
+  });
+  return ul;
+}
+function countLeaves(nodes){return nodes.reduce((a,n)=>a+(n.c?countLeaves(n.c):1),0);}
+B.forEach(b=>{
+  const d = document.createElement('details'); d.className='branch'; d.id='b'+b.k; if(b.kind) d.dataset.kind=b.kind;
+  const s = document.createElement('summary');
+  s.innerHTML = `<span class="k">${b.k}</span><h2>${b.title}</h2><span class="n">${countLeaves(b.nodes)} leaves</span>`;
+  d.appendChild(s);
+  const body = document.createElement('div'); body.className='body';
+  const tree = render(b.nodes); tree.className='tree'; tree.style.paddingLeft='0'; tree.style.borderLeft='none';
+  body.appendChild(tree); d.appendChild(body); branches.appendChild(d);
+  const a = document.createElement('a'); a.className='chip'; a.href='#b'+b.k; a.textContent = b.k+' · '+b.title;
+  a.addEventListener('click',()=>{d.open=true;});
+  chips.appendChild(a);
+});
+if(B.length) document.getElementById('b1').open = true;
+
+function setAll(open){document.querySelectorAll('details').forEach(d=>d.open=open);}
+document.getElementById('openAll').addEventListener('click',()=>setAll(true));
+document.getElementById('closeAll').addEventListener('click',()=>setAll(false));
+
+const q = document.getElementById('q');
+q.addEventListener('input',()=>{
+  const v = q.value.trim().toLowerCase();
+  const lis = document.querySelectorAll('.tree li');
+  if(!v){lis.forEach(l=>l.classList.remove('hiddenli'));return;}
+  lis.forEach(l=>l.classList.add('hiddenli'));
+  lis.forEach(l=>{
+    const direct = l.querySelector(':scope > .leaf, :scope > details > summary');
+    const ref = l.querySelector(':scope > .ref, :scope > details > .ref');
+    const txt = ((direct?direct.textContent:'')+' '+(ref?ref.textContent:'')).toLowerCase();
+    if(txt.includes(v)){
+      let e=l; while(e && e!==branches){ if(e.tagName==='LI') e.classList.remove('hiddenli'); if(e.tagName==='DETAILS') e.open=true; e=e.parentElement; }
+      l.querySelectorAll('li').forEach(x=>x.classList.remove('hiddenli'));
+    }
+  });
+});
+// in-page jumps: open every ancestor <details>, scroll, flash
+function jumpTo(id){
+  const el=document.getElementById(id); if(!el) return;
+  let e=el; while(e){ if(e.tagName==='DETAILS') e.open=true; e=e.parentElement; }
+  const d=el.querySelector(':scope > details'); if(d) d.open=true;
+  el.scrollIntoView({block:'center'});
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+// Jump trail: each jump remembers the node you left; Back returns to it (also works with the browser/phone back gesture)
+const backBtn=document.getElementById('back'); const trail=[];
+function showBack(){backBtn.hidden = trail.length===0;}
+document.addEventListener('click',ev=>{
+  const a=ev.target.closest('a.jump'); if(!a) return;
+  ev.preventDefault(); const id=a.getAttribute('href').slice(1);
+  const fromLi=a.closest('li, label'); const from=(fromLi&&fromLi.id)?fromLi.id:null;
+  if(from){trail.push(from); history.pushState({from},'','#'+id);} else {history.replaceState(null,'','#'+id);}
+  showBack(); jumpTo(id);
+});
+function goBack(){const from=trail.pop(); showBack(); if(from) jumpTo(from);}
+backBtn.addEventListener('click',()=>{ if(history.state&&history.state.from){history.back();} else goBack(); });
+window.addEventListener('popstate',ev=>{ if(trail.length){goBack();} });
+function openHash(){const h=location.hash.replace('#','');if(h && !['map','timeline','checklist'].includes(h)) jumpTo(h);}
+window.addEventListener('hashchange',openHash);openHash();
+
+// ---- Views (tabs) ----
+const VIEWS=['map','timeline','checklist'];
+function showView(v){
+  if(!VIEWS.includes(v)) v='map';
+  VIEWS.forEach(x=>{document.getElementById('view-'+x).hidden=(x!==v);});
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.view===v?'true':'false'));
+  try{localStorage.setItem('edto-view',v);}catch(e){}
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{showView(b.dataset.view); history.replaceState(null,'','#'+b.dataset.view); window.scrollTo(0,0);}));
+
+// ---- Checklist (built from the timeline steps) ----
+const CKKEY='edto-check-v1';
+let ck={}; try{ck=JSON.parse(localStorage.getItem(CKKEY)||'{}')||{};}catch(e){ck={};}
+function ckSave(){try{localStorage.setItem(CKKEY,JSON.stringify(ck));}catch(e){}}
+const cklist=document.getElementById('cklist');
+function renderCk(){
+  cklist.innerHTML=''; let total=0, done=0, phaseIds=[], cntEl=null;
+  const flushCnt=()=>{ if(cntEl){ const d=phaseIds.filter(i=>ck[i]).length; cntEl.textContent=d+' / '+phaseIds.length; } };
+  T.forEach((x,i)=>{
+    if(x.ph){
+      flushCnt(); phaseIds=[];
+      const h=document.createElement('div'); h.className='ph';
+      const t=document.createElement('span'); t.textContent=x.ph; h.appendChild(t);
+      cntEl=document.createElement('span'); cntEl.className='cnt'; h.appendChild(cntEl);
+      const rb=document.createElement('button'); rb.type='button'; rb.textContent='reset phase'; const ids=phaseIds; rb.addEventListener('click',()=>{ids.forEach(i=>delete ck[i]); ckSave(); renderCk();}); h.appendChild(rb);
+      cklist.appendChild(h); return;
+    }
+    const id='t'+i; phaseIds.push(id); total++; if(ck[id]) done++;
+    const lab=document.createElement('label'); lab.className=ck[id]?'done':''; lab.htmlFor='ck-'+id; lab.id='row-'+id;
+    const inp=document.createElement('input'); inp.type='checkbox'; inp.id='ck-'+id; inp.checked=!!ck[id];
+    inp.addEventListener('change',()=>{ if(inp.checked) ck[id]=1; else delete ck[id]; ckSave(); renderCk(); });
+    const box=document.createElement('span');
+    const s=document.createElement('span'); s.className='step'; s.innerHTML=x.t+(x.id?' '+J(x.id,'open'):''); box.appendChild(s);
+    const r=document.createElement('span'); r.className='ref'; r.textContent=x.r; box.appendChild(r);
+    lab.appendChild(inp); lab.appendChild(box); cklist.appendChild(lab);
+  });
+  flushCnt();
+  document.getElementById('ckprog').style.width=(total?Math.round(100*done/total):0)+'%';
+  document.getElementById('cktotal').textContent=done+' / '+total+' done';
+}
+document.getElementById('ckreset').addEventListener('click',()=>{ck={}; ckSave(); renderCk();});
+renderCk();
+
+// jump links from any view land in the view that holds the target
+const _jumpTo=jumpTo;
+jumpTo=function(id){
+  const el=document.getElementById(id); if(!el) return;
+  const v=el.closest('.view'); if(v) showView(v.id.slice(5));
+  _jumpTo(id);
+};
+
+// initial view: hash, else last used
+(function(){
+  const h=location.hash.replace('#','');
+  if(VIEWS.includes(h)) showView(h);
+  else if(!h){ let v='map'; try{v=localStorage.getItem('edto-view')||'map';}catch(e){} showView(v); }
+})();
+
+// ---- Service worker (offline) ----
+const swstate=document.getElementById('swstate');
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg=>{ swstate.textContent='Offline copy installed on this device.'; }).catch(()=>{ swstate.textContent='Offline install unavailable in this browser.'; });
+} else { swstate.textContent='Offline install unavailable in this browser.'; }
+
+</script>
+
+</body>
+</html>

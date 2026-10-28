@@ -1,0 +1,14 @@
+{
+  "name": "EDTO Mind Map",
+  "short_name": "EDTO",
+  "description": "Scoot A320 EDTO study map, timeline and phase checklist (OM-A 12.23, FCOM PRO-SPO-40).",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f4",
+  "theme_color": "#0f5f8a",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
